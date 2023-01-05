@@ -29,7 +29,3 @@ async def on_voice_state_update(member, before, after):
 # Substitua bot_token pelo token do seu bot
 TOKEN = config("TOKEN")
 client.run(TOKEN)
-
-
-# client.run("MTA2MDQyMDUwNDM1NzQzNzUyMA.G8mHPV.vLhOiEAJRkDoPcSfBZx1GSEr-o_BjCSPt56xdk")
-# await channel.send(f'{member.mention} saiu no canal {channel.name}', tts=True)
