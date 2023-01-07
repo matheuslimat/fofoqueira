@@ -33,41 +33,57 @@ async def on_voice_state_update(member, before, after):
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
 def obter_preco_jogo(nome_jogo):
-    # Faz a requisição à API da Steam para obter o preço do jogo
-    response = requests.get(f'https://store.steampowered.com/api/appdetails?appids={nome_jogo}')
-    # Verifica se a requisição foi bem-sucedida
-    if response.status_code == 200:
-        # Carrega os dados da resposta em formato JSON
-        dados = response.json()
-        # Verifica se o jogo foi encontrado
-        if 'success' in dados and dados['success']:
-            # Verifica se o jogo possui preço
-            if 'price_overview' in dados['data'] and 'final' in dados['data']['price_overview']:
-                # Retorna o preço final do jogo
-                return dados['data']['price_overview']['final']
-            else:
-                # Retorna uma mensagem indicando que o jogo não possui preço
-                return 'O jogo não possui preço'
-        else:
-            # Retorna uma mensagem indicando que o jogo não foi encontrado
-            return 'Jogo não encontrado'
+  # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
+  nome_jogo = nome_jogo.replace(' ', '%20')
+  # Envie uma solicitação à API do Steam para pesquisar o jogo
+  r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
+  # Analise a resposta JSON
+  data = json.loads(r.text)
+  # Verifique se o jogo foi encontrado
+  if data['total'] > 0:
+    # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
+    game = data['items'][0]
+    # Verifique se o jogo tem um preço definido
+    if 'price' in game:
+      # Obtenha o preço em BRL
+      price = game['price']['final'] / 100
+      # Retorne o preço
+      return price
     else:
-        # Retorna uma mensagem de erro
-        return 'Erro ao obter preço do jogo'
+      # Se o jogo não tiver um preço definido, retorne None
+      return None
+  else:
+    # Se o jogo não foi encontrado, retorne None
+    return None
 
-@client.command()
-async def preco(ctx, *, nome_jogo):
-
-    respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
-    respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
-
-    respostaPrefix = random.choice(respostasPrefix)
-    respostaSufix = random.choice(respostasSufix)
-
-    # Obtém o preço do jogo
+@client.event
+async def on_message(message):
+  if message.content.startswith('.preco'):
+    # Obtenha o nome do jogo da mensagem
+    nome_jogo = message.content[7:]
+    # Chame a função obter_preco_jogo com o nome do jogo
     preco = obter_preco_jogo(nome_jogo)
-    # Envia uma mensagem para o canal de texto com o preço do jogo
-    await ctx.send(respostaPrefix + preco + respostasSufix)
+    # Verifique se a função retornou um preço válido
+    if preco:
+      # Envie o preço para o canal
+      await message.channel.send(f'O preço de {nome_jogo} é R$ {preco:.2f}')
+    else:
+      # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
+      await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
+
+# @client.command()
+# async def preco(ctx, *, nome_jogo):
+
+#     respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
+#     respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
+
+#     respostaPrefix = random.choice(respostasPrefix)
+#     respostaSufix = random.choice(respostasSufix)
+
+#     # Obtém o preço do jogo
+#     preco = obter_preco_jogo(nome_jogo)
+#     # Envia uma mensagem para o canal de texto com o preço do jogo
+#     await ctx.send(respostaPrefix + preco + respostaSufix)
 
 
 
