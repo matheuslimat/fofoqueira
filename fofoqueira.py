@@ -41,6 +41,7 @@ async def on_voice_state_update(member, before, after):
 
       if contador['entradas'] + contador['saidas'] > 20:
         print(f"Flood detectado por {member.name} em {after.channel.name}!")
+        await member.edit(nick="Flodador")
       else:
         if before.channel is None and after.channel is not None:
           await after.channel.send(f'{member.mention} entrou no canal {after.channel.name}', tts=True)
@@ -64,8 +65,6 @@ async def obter_preco_jogo(message):
       respostaPrefix = random.choice(respostasPrefix)
       respostaSufix = random.choice(respostasSufix)  
       if price:
-        # Envie o preço para o canal
-        # await message.channel.send(price) 
         await message.channel.send(f'- {respostaPrefix} {price:.2f} {respostaSufix}') 
       else:
         await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
