@@ -18,44 +18,9 @@ async def on_message(message):
             # Conectar o bot ao canal de voz do autor da mensagem
             await message.author.voice.channel.connect()
     if message.content.startswith('.preco'):
-        # Obtenha o nome do jogo da mensagem
-        nome_jogo = message.content[7:]
-        # Chame a função obter_preco_jogo com o nome do jogo
-        preco = obter_preco_jogo(nome_jogo)
+        obter_preco_jogo(message)
+        exibir_imagem(message)
 
-        respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
-        respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
-
-        respostaPrefix = random.choice(respostasPrefix)
-        respostaSufix = random.choice(respostasSufix)
-
-        # Verifique se a função retornou um preço válido
-        if preco:
-          # Envie o preço para o canal
-          await message.channel.send("ola") 
-            #   await message.channel.send(f'- {respostaPrefix} {preco:.2f} {respostaSufix}') 
-        else:
-          # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
-          await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
-        #----------------------------
-    if message.content.startswith('.imagem'):
-        # Obtenha o nome do jogo da mensagem
-        nome_jogo = message.content[8:]
-        # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
-        nome_jogo = nome_jogo.replace(' ', '%20')
-        # Envie uma solicitação à API do Steam para pesquisar o jogo
-        r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
-        # Analise a resposta JSON
-        data = json.loads(r.text)
-        # Verifique se o jogo foi encontrado
-        if data['total'] > 0:
-            # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
-            game = data['items'][0]
-            # Envie a imagem para o canal
-            await exibir_imagem(message.channel, game)
-        else:
-            # Se o jogo não foi encontrado, envie uma mensagem informando isso
-            await message.channel.send(f'O jogo {nome_jogo} não foi encontrado')
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
@@ -72,7 +37,8 @@ async def on_voice_state_update(member, before, after):
 
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
-def obter_preco_jogo(nome_jogo):
+def obter_preco_jogo(message):
+  nome_jogo = message.content[7:]
   # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
   nome_jogo = nome_jogo.replace(' ', '%20')
   # Envie uma solicitação à API do Steam para pesquisar o jogo
@@ -87,8 +53,19 @@ def obter_preco_jogo(nome_jogo):
     if 'price' in game:
       # Obtenha o preço em BRL
       price = game['price']['final'] / 100
-      # Retorne o preço
-      return price
+
+      respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
+      respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']  
+      respostaPrefix = random.choice(respostasPrefix)
+      respostaSufix = random.choice(respostasSufix)  
+      # Verifique se a função retornou um preço válido
+      if price:
+        # Envie o preço para o canal
+        await message.channel.send(price) 
+        #  await message.channel.send(f'- {respostaPrefix} {preco:.2f} {respostaSufix}') 
+      else:
+        # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
+        await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
     else:
       # Se o jogo não tiver um preço definido, retorne None
       return None
@@ -96,11 +73,29 @@ def obter_preco_jogo(nome_jogo):
     # Se o jogo não foi encontrado, retorne None
     return None
 
-async def exibir_imagem(channel, game):
-  # Obtenha a URL da imagem
-  url_imagem = game['tiny_image']
-  # Envie a imagem para o canal
-  await channel.send(url_imagem)
+
+async def exibir_imagem(message):
+  # Obtenha o nome do jogo da mensagem
+  nome_jogo = message.content[8:]
+  # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
+  nome_jogo = nome_jogo.replace(' ', '%20')
+  # Envie uma solicitação à API do Steam para pesquisar o jogo
+  r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
+  # Analise a resposta JSON
+  data = json.loads(r.text)
+  # Verifique se o jogo foi encontrado
+  if data['total'] > 0:
+      # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
+      game = data['items'][0]
+      # Obtenha a URL da imagem
+      url_imagem = game['tiny_image']
+      # Envie a imagem para o canal
+      await message.channel.send(url_imagem)
+  else:
+      # Se o jogo não foi encontrado, envie uma mensagem informando isso
+      await message.channel.send(f'O jogo {nome_jogo} não foi encontrado')
+
+
 
 
 # Substitua bot_token pelo token do seu bot
