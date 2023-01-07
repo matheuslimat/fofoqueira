@@ -52,7 +52,7 @@ async def on_voice_state_update(member, before, after):
 
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
-def obter_preco_jogo(message, nome_jogo):
+async def obter_preco_jogo(message, nome_jogo):
   # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
   nome_jogo = nome_jogo.replace(' ', '%20')
   # Envie uma solicitação à API do Steam para pesquisar o jogo
@@ -64,7 +64,7 @@ def obter_preco_jogo(message, nome_jogo):
     # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
     game = data['items'][0]
     # Envie a imagem para o canal
-    exibir_imagem(message.channel, game)
+    await exibir_imagem(message.channel, game)
     # Verifique se o jogo tem um preço definido
     if 'price' in game:
       # Obtenha o preço em BRL
