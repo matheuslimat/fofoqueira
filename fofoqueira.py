@@ -5,6 +5,7 @@ import requests
 import random
 import json
 import re
+import time
 
 client = commands.Bot(command_prefix='.', intents=discord.Intents.all())
 countInteractive = 0
@@ -20,13 +21,6 @@ async def on_member_update(before, after):
     if delta.days >= 3:
       await after.edit(nick="Foragido")
 
-@client.event
-async def on_message(message):
-  if message.author.top_role.name == "Sênior" and message.content == ".rollback-nicks":
-    for member in message.guild.members:
-      if member.nick is not None:
-        apelido_revertido = member.nick[::-1]
-        await member.edit(nick=apelido_revertido)
 
 @client.event
 async def on_message(message):
@@ -36,6 +30,11 @@ async def on_message(message):
     if message.content.startswith('.preco'):
       await obter_preco_jogo(message)
       await exibir_imagem(message)
+  if message.author.top_role.name == "Sênior" and message.content == ".rollback-nicks":
+    for member in message.guild.members:
+      if member.nick is not None:
+        apelido_revertido = member.nick[::-1]
+        await member.edit(nick=apelido_revertido)
 
 
 # <---------------------------------- TTS ------------------------------------------------------>
