@@ -32,7 +32,7 @@ async def on_message(message):
         # Verifique se a função retornou um preço válido
         if preco:
           # Envie o preço para o canal
-          await message.channel.send(f'- {respostaPrefix} {preco:.2f} {respostasSufix}') 
+          await message.channel.send(f'- {respostaPrefix} {preco:.2f} {respostaSufix}') 
         else:
           # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
           await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
