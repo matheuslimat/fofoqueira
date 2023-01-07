@@ -3,6 +3,7 @@ from discord.ext import commands
 from decouple import config
 import requests
 import random
+import json
 
 client = commands.Bot(command_prefix='.', intents=discord.Intents.all())
 
