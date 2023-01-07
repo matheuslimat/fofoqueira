@@ -21,7 +21,7 @@ async def on_message(message):
         # Obtenha o nome do jogo da mensagem
         nome_jogo = message.content[7:]
         # Chame a função obter_preco_jogo com o nome do jogo
-        preco = obter_preco_jogo(nome_jogo)
+        preco = obter_preco_jogo(message, nome_jogo)
 
         respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
         respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
@@ -52,7 +52,7 @@ async def on_voice_state_update(member, before, after):
 
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
-def obter_preco_jogo(nome_jogo):
+def obter_preco_jogo(message, nome_jogo):
   # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
   nome_jogo = nome_jogo.replace(' ', '%20')
   # Envie uma solicitação à API do Steam para pesquisar o jogo
@@ -63,6 +63,8 @@ def obter_preco_jogo(nome_jogo):
   if data['total'] > 0:
     # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
     game = data['items'][0]
+    # Envie a imagem para o canal
+    await exibir_imagem(message.channel, game)
     # Verifique se o jogo tem um preço definido
     if 'price' in game:
       # Obtenha o preço em BRL
@@ -76,21 +78,11 @@ def obter_preco_jogo(nome_jogo):
     # Se o jogo não foi encontrado, retorne None
     return None
 
-
-# @client.command()
-# async def preco(ctx, *, nome_jogo):
-
-#     respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
-#     respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
-
-#     respostaPrefix = random.choice(respostasPrefix)
-#     respostaSufix = random.choice(respostasSufix)
-
-#     # Obtém o preço do jogo
-#     preco = obter_preco_jogo(nome_jogo)
-#     # Envia uma mensagem para o canal de texto com o preço do jogo
-#     await ctx.send(respostaPrefix + preco + respostaSufix)
-
+async def exibir_imagem(channel, game):
+  # Obtenha a URL da imagem
+  url_imagem = game['tiny_image']
+  # Envie a imagem para o canal
+  await channel.send(url_imagem)
 
 
 # Substitua bot_token pelo token do seu bot
