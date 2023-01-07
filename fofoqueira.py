@@ -72,7 +72,7 @@ async def on_voice_state_update(member, before, after):
 
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
-async def obter_preco_jogo(nome_jogo):
+def obter_preco_jogo(nome_jogo):
   # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
   nome_jogo = nome_jogo.replace(' ', '%20')
   # Envie uma solicitação à API do Steam para pesquisar o jogo
