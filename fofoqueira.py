@@ -4,6 +4,7 @@ from decouple import config
 import requests
 import random
 import json
+import re
 
 client = commands.Bot(command_prefix='.', intents=discord.Intents.all())
 countInteractive = 0
@@ -16,8 +17,8 @@ async def on_message(message):
         if message.author.voice is not None:
             await message.author.voice.channel.connect()
     if message.content.startswith('.preco'):
-        obter_preco_jogo(message)
-        exibir_imagem(message)
+        await obter_preco_jogo(message)
+        await exibir_imagem(message)
 
 
 # <---------------------------------- TTS ------------------------------------------------------>
@@ -48,7 +49,7 @@ async def on_voice_state_update(member, before, after):
 
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
-def obter_preco_jogo(message):
+async def obter_preco_jogo(message):
   nome_jogo = message.content[7:]
   nome_jogo = nome_jogo.replace(' ', '%20')
   r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
@@ -63,7 +64,9 @@ def obter_preco_jogo(message):
       respostaPrefix = random.choice(respostasPrefix)
       respostaSufix = random.choice(respostasSufix)  
       if price:
-        await message.channel.send(price) 
+        # Envie o preço para o canal
+        # await message.channel.send(price) 
+        await message.channel.send(f'- {respostaPrefix} {price:.2f} {respostaSufix}') 
       else:
         await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
     else:
@@ -71,9 +74,15 @@ def obter_preco_jogo(message):
   else:
     return None
 
+def remover_emojis(nome_canal):
+    # Remove os emojis do nome do canal usando expressões regulares
+    return re.sub(r'[^\w\s]', '', nome_canal)
+
 
 async def exibir_imagem(message):
-  nome_jogo = message.content[8:]
+  # Obtenha o nome do jogo da mensagem
+  nome_jogo = message.content[7:]
+  # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
   nome_jogo = nome_jogo.replace(' ', '%20')
   r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
   data = json.loads(r.text)
