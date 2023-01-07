@@ -16,6 +16,18 @@ async def on_message(message):
         if message.author.voice is not None:
             # Conectar o bot ao canal de voz do autor da mensagem
             await message.author.voice.channel.connect()
+    if message.content.startswith('.preco'):
+        # Obtenha o nome do jogo da mensagem
+        nome_jogo = message.content[7:]
+        # Chame a função obter_preco_jogo com o nome do jogo
+        preco = obter_preco_jogo(nome_jogo)
+        # Verifique se a função retornou um preço válido
+        if preco:
+          # Envie o preço para o canal
+          await message.channel.send(f'O preço de {nome_jogo} é R$ {preco:.2f}')
+        else:
+          # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
+          await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
@@ -56,20 +68,6 @@ def obter_preco_jogo(nome_jogo):
     # Se o jogo não foi encontrado, retorne None
     return None
 
-@client.event
-async def on_message(message):
-  if message.content.startswith('.preco'):
-    # Obtenha o nome do jogo da mensagem
-    nome_jogo = message.content[7:]
-    # Chame a função obter_preco_jogo com o nome do jogo
-    preco = obter_preco_jogo(nome_jogo)
-    # Verifique se a função retornou um preço válido
-    if preco:
-      # Envie o preço para o canal
-      await message.channel.send(f'O preço de {nome_jogo} é R$ {preco:.2f}')
-    else:
-      # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
-      await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
 
 # @client.command()
 # async def preco(ctx, *, nome_jogo):
