@@ -11,14 +11,31 @@ countInteractive = 0
 lastNameInteractive = None
 lastNameInteractiveLimite = 5
 
+
+@client.event
+async def on_member_update(before, after):
+  ultima_atividade = after.last_activity
+  if ultima_atividade is not None:
+    delta = datetime.datetime.utcnow() - ultima_atividade
+    if delta.days >= 3:
+      await after.edit(nick="Foragido")
+
 @client.event
 async def on_message(message):
-    if message.content.startswith(".fofoqueira"):
-        if message.author.voice is not None:
-            await message.author.voice.channel.connect()
+  if message.author.top_role.name == "Sênior" and message.content == ".rollback-nicks":
+    for member in message.guild.members:
+      if member.nick is not None:
+        apelido_revertido = member.nick[::-1]
+        await member.edit(nick=apelido_revertido)
+
+@client.event
+async def on_message(message):
+  if message.content.startswith(".fofoqueira"):
+    if message.author.voice is not None:
+      await message.author.voice.channel.connect()
     if message.content.startswith('.preco'):
-        await obter_preco_jogo(message)
-        await exibir_imagem(message)
+      await obter_preco_jogo(message)
+      await exibir_imagem(message)
 
 
 # <---------------------------------- TTS ------------------------------------------------------>
