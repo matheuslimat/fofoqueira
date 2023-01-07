@@ -5,22 +5,16 @@ import requests
 import random
 import json
 import re
-import time
+import datetime
+import asyncio
 
 client = commands.Bot(command_prefix='.', intents=discord.Intents.all())
 countInteractive = 0
 lastNameInteractive = None
-lastNameInteractiveLimite = 5
+countInteractiveLimite = 10
 
-
-@client.event
-async def on_member_update(before, after):
-  ultima_atividade = after.last_activity
-  if ultima_atividade is not None:
-    delta = datetime.datetime.utcnow() - ultima_atividade
-    if delta.days >= 3:
-      await after.edit(nick="Foragido")
-
+flood_limit = 10
+voice_join_times = {}
 
 @client.event
 async def on_message(message):
@@ -36,37 +30,28 @@ async def on_message(message):
         apelido_revertido = member.nick[::-1]
         await member.edit(nick=apelido_revertido)
 
-
 # <---------------------------------- TTS ------------------------------------------------------>
-@client.event
+
+
+
 async def on_voice_state_update(member, before, after):
-  entrou = before.channel is None and after.channel is not None
-  saiu = before.channel is not None and after.channel is None
+  now = datetime.utcnow()
 
-  if entrou or saiu:
-      contador = {'entradas': 0, 'saidas': 0}
-      periodo = 60
-      hora_inicio = time.time()
-      while time.time() - hora_inicio < periodo:
-          if after.channel is not None:
-            usuarios_no_canal = after.channel.members
-          if member in usuarios_no_canal:
-              contador['entradas'] += 1
-          else:
-              contador['saidas'] += 1
-          time.sleep(1)
-
-      if contador['entradas'] + contador['saidas'] > 20:
-        print(f"Flood detectado por {member.name} em {after.channel.name}!")
-        await member.edit(nick="Flodador")
+  if before.channel is None and after.channel is not None:
+    if member.id in voice_join_times:
+      time_since_last_join = now - voice_join_times[member.id]
+      if time_since_last_join.seconds < flood_limit:
+        await member.send('Você está entrando no canal de voz com uma frequência maior do que o permitido. Por favor, aguarde alguns segundos antes de entrar novamente.')
+        ##await member.edit(voice_channel=None)
+        return
       else:
-        if before.channel is None and after.channel is not None:
-          await after.channel.send(f'{member.mention} entrou no canal {after.channel.name}', tts=True)
-        elif before.channel is not None and after.channel is None:
-          await before.channel.send(f'{member.mention} saiu do canal {before.channel.name}', tts=True)
+        await after.channel.send(f'{member.mention} entrou no canal {after.channel.name}', tts=True)
+    voice_join_times[member.id] = now
+  elif before.channel is not None and after.channel is None:
+    del voice_join_times[member.id]
+    await before.channel.send(f'{member.mention} saiu do canal {before.channel.name}', tts=True)
 
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
-
 async def obter_preco_jogo(message):
   nome_jogo = message.content[7:]
   nome_jogo = nome_jogo.replace(' ', '%20')
@@ -91,14 +76,10 @@ async def obter_preco_jogo(message):
     return None
 
 def remover_emojis(nome_canal):
-    # Remove os emojis do nome do canal usando expressões regulares
     return re.sub(r'[^\w\s]', '', nome_canal)
 
-
 async def exibir_imagem(message):
-  # Obtenha o nome do jogo da mensagem
   nome_jogo = message.content[7:]
-  # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
   nome_jogo = nome_jogo.replace(' ', '%20')
   r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
   data = json.loads(r.text)
@@ -108,6 +89,37 @@ async def exibir_imagem(message):
       await message.channel.send(url_imagem)
   else:
       await message.channel.send(f'O jogo {nome_jogo} não foi encontrado')
+
+
+# async def tarefa_agendada():
+#   await client.wait_until_ready()
+#   while not client.is_closed():
+#     # Execute a ação a cada 10 minutos (600 segundos)
+#     await asyncio.sleep(600)
+#     await atribuir_apelidos()
+
+# async def atribuir_apelidos(client):
+#   members = client.get_all_members()
+
+#   for member in members:
+#     guild_member = await client.fetch_member(member.guild.id, member.id)
+#     joined_at = guild_member.joined_at
+#     time_since_last_seen = datetime.utcnow() - joined_at
+
+#     if time_since_last_seen > datetime.timedelta(days=3) and time_since_last_seen < datetime.timedelta(weeks=1):
+#       nickname = 'Foragido'
+#     elif time_since_last_seen > datetime.timedelta(weeks=1) and time_since_last_seen < datetime.timedelta(weeks=3):
+#       nickname = 'Procurado pela Interpool'
+#     elif time_since_last_seen > datetime.timedelta(weeks=2) and time_since_last_seen < datetime.timedelta(weeks=4):
+#       nickname = 'Procurado pelo FBI'
+#     elif time_since_last_seen > datetime.timedelta(weeks=4):
+#       nickname = 'CPF cancelado'
+#     else:
+#       nickname = None
+
+#     await guild_member.set_nickname(nickname)
+
+# client.loop.create_task(tarefa_agendada(client))
 
 
 TOKEN = config("TOKEN")
