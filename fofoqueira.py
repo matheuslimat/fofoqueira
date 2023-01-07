@@ -48,7 +48,8 @@ async def on_voice_state_update(member, before, after):
       periodo = 60
       hora_inicio = time.time()
       while time.time() - hora_inicio < periodo:
-          usuarios_no_canal = after.channel.members
+          if after.channel is not None:
+            usuarios_no_canal = after.channel.members
           if member in usuarios_no_canal:
               contador['entradas'] += 1
           else:
