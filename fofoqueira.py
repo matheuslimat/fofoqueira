@@ -64,7 +64,7 @@ def obter_preco_jogo(message, nome_jogo):
     # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
     game = data['items'][0]
     # Envie a imagem para o canal
-    await exibir_imagem(message.channel, game)
+    exibir_imagem(message.channel, game)
     # Verifique se o jogo tem um preço definido
     if 'price' in game:
       # Obtenha o preço em BRL
