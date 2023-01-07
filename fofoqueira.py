@@ -21,7 +21,7 @@ async def on_message(message):
         # Obtenha o nome do jogo da mensagem
         nome_jogo = message.content[7:]
         # Chame a função obter_preco_jogo com o nome do jogo
-        preco = obter_preco_jogo(message, nome_jogo)
+        preco = obter_preco_jogo(nome_jogo)
 
         respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
         respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
@@ -36,6 +36,25 @@ async def on_message(message):
         else:
           # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
           await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
+        #----------------------------
+    if message.content.startswith('.imagem'):
+        # Obtenha o nome do jogo da mensagem
+        nome_jogo = message.content[8:]
+        # Substitua os espaços no nome do jogo por %20 para torná-lo compatível com a URL
+        nome_jogo = nome_jogo.replace(' ', '%20')
+        # Envie uma solicitação à API do Steam para pesquisar o jogo
+        r = requests.get(f'https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={nome_jogo}')
+        # Analise a resposta JSON
+        data = json.loads(r.text)
+        # Verifique se o jogo foi encontrado
+        if data['total'] > 0:
+            # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
+            game = data['items'][0]
+            # Envie a imagem para o canal
+            await exibir_imagem(message.channel, game)
+        else:
+            # Se o jogo não foi encontrado, envie uma mensagem informando isso
+            await message.channel.send(f'O jogo {nome_jogo} não foi encontrado')
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
@@ -63,8 +82,6 @@ async def obter_preco_jogo(message, nome_jogo):
   if data['total'] > 0:
     # Obtenha o primeiro resultado (já que estamos pesquisando por nome, isso deve ser o jogo correto)
     game = data['items'][0]
-    # Envie a imagem para o canal
-    await exibir_imagem(message.channel, game)
     # Verifique se o jogo tem um preço definido
     if 'price' in game:
       # Obtenha o preço em BRL
