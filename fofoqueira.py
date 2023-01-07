@@ -22,10 +22,17 @@ async def on_message(message):
         nome_jogo = message.content[7:]
         # Chame a função obter_preco_jogo com o nome do jogo
         preco = obter_preco_jogo(nome_jogo)
+
+        respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
+        respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']
+
+        respostaPrefix = random.choice(respostasPrefix)
+        respostaSufix = random.choice(respostasSufix)
+
         # Verifique se a função retornou um preço válido
         if preco:
           # Envie o preço para o canal
-          await message.channel.send(f'O preço de {nome_jogo} é R$ {preco:.2f}')
+          await message.channel.send(f'- {respostaPrefix} {preco:.2f} {respostasSufix}') 
         else:
           # Se a função retornou None, envie uma mensagem informando que o jogo não foi encontrado ou não possui um preço definido
           await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
