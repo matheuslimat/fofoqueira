@@ -63,7 +63,7 @@ async def obter_preco_jogo(message):
       else:
         await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
     else:
-      return None
+      await message.channel.send(f'Nem o perigo achou esse jogo!!! Acho que é free... {nome_jogo}')
   else:
     return None
 
