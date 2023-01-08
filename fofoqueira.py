@@ -9,9 +9,6 @@ import datetime
 import asyncio
 
 client = commands.Bot(command_prefix='.', intents=discord.Intents.all())
-countInteractive = 0
-lastNameInteractive = None
-countInteractiveLimite = 10
 
 flood_limit = 10
 voice_join_times = {}
@@ -31,9 +28,6 @@ async def on_message(message):
         await member.edit(nick=apelido_revertido)
 
 # <---------------------------------- TTS ------------------------------------------------------>
-
-
-
 async def on_voice_state_update(member, before, after):
   now = datetime.utcnow()
 
@@ -43,6 +37,7 @@ async def on_voice_state_update(member, before, after):
       if time_since_last_join.seconds < flood_limit:
         await member.send('Você está entrando no canal de voz com uma frequência maior do que o permitido. Por favor, aguarde alguns segundos antes de entrar novamente.')
         ##await member.edit(voice_channel=None)
+        await member.set_nickname('Flodador')
         return
       else:
         await after.channel.send(f'{member.mention} entrou no canal {after.channel.name}', tts=True)
@@ -91,35 +86,35 @@ async def exibir_imagem(message):
       await message.channel.send(f'O jogo {nome_jogo} não foi encontrado')
 
 
-# async def tarefa_agendada():
-#   await client.wait_until_ready()
-#   while not client.is_closed():
-#     # Execute a ação a cada 10 minutos (600 segundos)
-#     await asyncio.sleep(600)
-#     await atribuir_apelidos()
+async def tarefa_agendada():
+  await client.wait_until_ready()
+  while not client.is_closed():
+    # Execute a ação a cada 10 minutos (600 segundos)
+    await asyncio.sleep(600)
+    await atribuir_apelidos()
 
-# async def atribuir_apelidos(client):
-#   members = client.get_all_members()
+async def atribuir_apelidos(client):
+  members = client.get_all_members()
 
-#   for member in members:
-#     guild_member = await client.fetch_member(member.guild.id, member.id)
-#     joined_at = guild_member.joined_at
-#     time_since_last_seen = datetime.utcnow() - joined_at
+  for member in members:
+    guild_member = await client.fetch_member(member.guild.id, member.id)
+    joined_at = guild_member.joined_at
+    time_since_last_seen = datetime.utcnow() - joined_at
 
-#     if time_since_last_seen > datetime.timedelta(days=3) and time_since_last_seen < datetime.timedelta(weeks=1):
-#       nickname = 'Foragido'
-#     elif time_since_last_seen > datetime.timedelta(weeks=1) and time_since_last_seen < datetime.timedelta(weeks=3):
-#       nickname = 'Procurado pela Interpool'
-#     elif time_since_last_seen > datetime.timedelta(weeks=2) and time_since_last_seen < datetime.timedelta(weeks=4):
-#       nickname = 'Procurado pelo FBI'
-#     elif time_since_last_seen > datetime.timedelta(weeks=4):
-#       nickname = 'CPF cancelado'
-#     else:
-#       nickname = None
+    if time_since_last_seen > datetime.timedelta(days=3) and time_since_last_seen < datetime.timedelta(weeks=1):
+      nickname = 'Foragido'
+    elif time_since_last_seen > datetime.timedelta(weeks=1) and time_since_last_seen < datetime.timedelta(weeks=3):
+      nickname = 'Procurado pela Interpool'
+    elif time_since_last_seen > datetime.timedelta(weeks=2) and time_since_last_seen < datetime.timedelta(weeks=4):
+      nickname = 'Procurado pelo FBI'
+    elif time_since_last_seen > datetime.timedelta(weeks=4):
+      nickname = 'CPF cancelado'
+    else:
+      nickname = None
 
-#     await guild_member.set_nickname(nickname)
+    await guild_member.set_nickname(nickname)
 
-# client.loop.create_task(tarefa_agendada(client))
+client.loop.create_task(tarefa_agendada(client))
 
 
 TOKEN = config("TOKEN")
