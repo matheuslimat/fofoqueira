@@ -55,7 +55,7 @@ async def obter_preco_jogo(message):
       price = game['price']['final'] / 100
 
       respostasPrefix = ['Essa porcaria custa ', 'Essa belezinha custa ', 'Esse jogo de doente custa ']
-      respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ']  
+      respostasSufix = [' lulas! ', ' mangos! ', ' pila! ', ' bufunfa! ', ' faz o pikxii! ']  
       respostaPrefix = random.choice(respostasPrefix)
       respostaSufix = random.choice(respostasSufix)  
       if price:
