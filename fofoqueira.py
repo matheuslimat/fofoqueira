@@ -94,11 +94,7 @@ async def obter_preco_jogo(message):
       else:
         await message.channel.send(f'Não foi possível encontrar o preço de {nome_jogo}')
     else:
-<<<<<<< HEAD
-      await message.channel.send(f'Este jogo está gratis na steam!')
-=======
       await message.channel.send(f'Nem o perigo achou esse jogo!!! Acho que é free... {nome_jogo}')
->>>>>>> 2c62c00551a1434c677492c3fad068f61bf8b64c
   else:
     return None
 
