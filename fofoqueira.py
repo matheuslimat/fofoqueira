@@ -58,6 +58,25 @@ async def show_commands(message):
   command_list = [command.name for command in client.commands]
   await message.channel.send(f'Comandos disponíveis: {", ".join(command_list)}')
 
+# < --------------------------------- LOL ------------------------------------------------------>
+@client.command()
+async def lol(ctx):
+  url = "https://league-of-legends-galore.p.rapidapi.com/api/getPlayerRank"
+
+  nickName = ctx.message.content[5:]
+  print(nickName)
+  querystring = {"name":nickName,"region":"br"}
+
+  headers = {
+  	"X-RapidAPI-Key": "0104c4d9f6msh2256b7bef11422ep150493jsn3eb1ae970e48",
+  	"X-RapidAPI-Host": "league-of-legends-galore.p.rapidapi.com"
+  }
+
+  response = requests.request("GET", url, headers=headers, params=querystring)
+
+  await ctx.message.channel.send(response.text)
+
+
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
 async def on_voice_state_update(member, before, after):
