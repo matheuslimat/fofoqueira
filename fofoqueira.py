@@ -64,7 +64,6 @@ async def lol(ctx):
   url = "https://league-of-legends-galore.p.rapidapi.com/api/getPlayerRank"
 
   nickName = ctx.message.content[5:]
-  print(nickName)
   querystring = {"name":nickName,"region":"br"}
 
   headers = {
@@ -73,8 +72,40 @@ async def lol(ctx):
   }
 
   response = requests.request("GET", url, headers=headers, params=querystring)
+  user = response.json()[0]
+  print(user)
 
-  await ctx.message.channel.send(response.text)
+  username = user['username']
+  rank = user['rank']
+  emoji = ''
+  points = user['lp']
+  winLossRation = user['winLossRatio']
+
+  if 'Gold' in rank:
+    emoji = '<:7052lolrank4gold:1062550558927491142>'
+  elif 'Silver' in rank:
+    emoji = '<:3360lolrank3silver:1062550562027098142>'
+  elif 'Bronze' in rank:
+    emoji = '<:3360lolrank2bronze:1062550555433644073>'
+  elif 'Iron' in rank:
+    emoji = '<:4133lolrank1iron:1062550564975677492>'
+  elif 'Platinum' in rank:
+    emoji = '<:4183lolrank5platinum:1062550553089019975>'
+  elif 'Diamond' in rank:
+    emoji = '<:5693lolrank6diamond:1062550551499386940>'
+  elif 'GrandMaster' in rank:
+    emoji = '<:8981lolrank8grandmaster:1062550543479873597>'  
+  elif 'Master' in rank:
+    emoji = '<:9431lolrank7master:1062550548768895117>' 
+  elif 'Challenger' in rank:
+    emoji = '<:8641lolrank9challenger:1062550547049218098>' 
+
+  text = f'{emoji} **User:** {username} **Vitorias/Derrotas:** {winLossRation} **Pontos:** {points}'
+
+
+  await ctx.send(file=discord.File('assets/lol_banner.png'))
+  await ctx.message.channel.send(text)
+  
 
 
 # <---------------------------------- TTS ------------------------------------------------------>
