@@ -15,12 +15,14 @@ lista_de_vendas = []
 
 # Remover Help padrão
 client.remove_command('help')
+count = 0;
 
 @client.command()
-async def vender(ctx, valor: float, *, produto: str):
+async def vender(ctx, valor: float, *, produto: str, pix: str):
   author = ctx.message.author
-  venda = {'author': str(author), 'produto': produto, 'valor': valor}
+  venda = {id: count, 'author': str(author), 'produto': produto, 'valor': valor , 'pix': pix}
   lista_de_vendas.append(venda)
+  count = count + 1
   await ctx.send(f'O produto "{produto}" foi adicionado à lista de vendas no valor de R$ {valor}')
 
 @client.command()
@@ -30,8 +32,32 @@ async def vendas(ctx):
     return
   response = '**Lista de vendas:**\n'
   for venda in lista_de_vendas:
-    response += f'O produto {venda["produto"]} está por R$ {venda["valor"]}, o usuario ({venda["author"]} esta vendendo!)\n'
+    response += f'O produto de chave {id} de nome {venda["produto"]} está por R$ {venda["valor"]}, o usuario ({venda["author"]} esta vendendo!)\n'
   await ctx.send(response)
+
+@client.command()
+async def pix(ctx, valor: int):
+  for i, item in range(lista_de_vendas):
+    if item.id == valor:
+      del lista_de_vendas[i];
+      await ctx.send(f'Esta venda possui o pix: {item.pix}')
+      await ctx.send(file=discord.File('assets/faz_o-pix.png'))
+      return
+  await ctx.send(f'Não há venda cadastrada com o id fornecido.') 
+
+@client.command()
+async def remover_venda(ctx, valor: int):
+  author = ctx.message.author
+  for i, item in range(lista_de_vendas):
+    if item.id == valor:
+      if (author == item.author):
+        del lista_de_vendas[i];
+        await ctx.send(f'Venda removida com sucesso!')
+        return
+      else:
+        await ctx.send(f'Você não é o author da venda!')
+        return
+  await ctx.send(f'Não há venda cadastrada com o id fornecido.') 
 
 @client.command()
 async def preco(ctx):
