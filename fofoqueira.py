@@ -18,7 +18,7 @@ client.remove_command('help')
 count = 0;
 
 @client.command()
-async def vender(ctx, valor: float, *, produto: str, pix: str):
+async def vender(ctx, valor: float, produto: str, *,pix: str):
   author = ctx.message.author
   venda = {id: count, 'author': str(author), 'produto': produto, 'valor': valor , 'pix': pix}
   lista_de_vendas.append(venda)
