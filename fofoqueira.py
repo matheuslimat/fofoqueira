@@ -16,6 +16,7 @@ lista_de_vendas = []
 
 # Remover Help padrão
 client.remove_command('help')
+count = 0;
 
 @client.event
 async def on_ready():
@@ -31,10 +32,11 @@ Obrigado por sua cooperação e divertam-se no nosso servidor! ''')
         await asyncio.sleep(3600) # Aguarda 1 hora (3600 segundos) antes de enviar a próxima mensagem
 
 @client.command()
-async def vender(ctx, valor: float, *, produto: str):
+async def vender(ctx, valor: float, produto: str, *,pix: str):
   author = ctx.message.author
-  venda = {'author': str(author), 'produto': produto, 'valor': valor}
+  venda = {id: count, 'author': str(author), 'produto': produto, 'valor': valor , 'pix': pix}
   lista_de_vendas.append(venda)
+  count = count + 1
   await ctx.send(f'O produto "{produto}" foi adicionado à lista de vendas no valor de R$ {valor}')
 
 @client.command()
@@ -44,8 +46,32 @@ async def vendas(ctx):
     return
   response = '**Lista de vendas:**\n'
   for venda in lista_de_vendas:
-    response += f'O produto {venda["produto"]} está por R$ {venda["valor"]}, o usuario ({venda["author"]} esta vendendo!)\n'
+    response += f'O produto de chave {id} de nome {venda["produto"]} está por R$ {venda["valor"]}, o usuario ({venda["author"]} esta vendendo!)\n'
   await ctx.send(response)
+
+@client.command()
+async def pix(ctx, valor: int):
+  for i, item in range(lista_de_vendas):
+    if item.id == valor:
+      del lista_de_vendas[i];
+      await ctx.send(f'Esta venda possui o pix: {item.pix}')
+      await ctx.send(file=discord.File('assets/faz_o-pix.png'))
+      return
+  await ctx.send(f'Não há venda cadastrada com o id fornecido.') 
+
+@client.command()
+async def remover_venda(ctx, valor: int):
+  author = ctx.message.author
+  for i, item in range(lista_de_vendas):
+    if item.id == valor:
+      if (author == item.author):
+        del lista_de_vendas[i];
+        await ctx.send(f'Venda removida com sucesso!')
+        return
+      else:
+        await ctx.send(f'Você não é o author da venda!')
+        return
+  await ctx.send(f'Não há venda cadastrada com o id fornecido.') 
 
 @client.command()
 async def preco(ctx):
@@ -78,7 +104,6 @@ async def lol(ctx):
   url = "https://league-of-legends-galore.p.rapidapi.com/api/getPlayerRank"
 
   nickName = ctx.message.content[5:]
-  print(nickName)
   querystring = {"name":nickName,"region":"br"}
 
   headers = {
@@ -87,8 +112,40 @@ async def lol(ctx):
   }
 
   response = requests.request("GET", url, headers=headers, params=querystring)
+  user = response.json()[0]
+  print(user)
 
-  await ctx.message.channel.send(response.text)
+  username = user['username']
+  rank = user['rank']
+  emoji = ''
+  points = user['lp']
+  winLossRation = user['winLossRatio']
+
+  if 'Gold' in rank:
+    emoji = '<:7052lolrank4gold:1062550558927491142>'
+  elif 'Silver' in rank:
+    emoji = '<:3360lolrank3silver:1062550562027098142>'
+  elif 'Bronze' in rank:
+    emoji = '<:3360lolrank2bronze:1062550555433644073>'
+  elif 'Iron' in rank:
+    emoji = '<:4133lolrank1iron:1062550564975677492>'
+  elif 'Platinum' in rank:
+    emoji = '<:4183lolrank5platinum:1062550553089019975>'
+  elif 'Diamond' in rank:
+    emoji = '<:5693lolrank6diamond:1062550551499386940>'
+  elif 'GrandMaster' in rank:
+    emoji = '<:8981lolrank8grandmaster:1062550543479873597>'  
+  elif 'Master' in rank:
+    emoji = '<:9431lolrank7master:1062550548768895117>' 
+  elif 'Challenger' in rank:
+    emoji = '<:8641lolrank9challenger:1062550547049218098>' 
+
+  text = f'{emoji} **User:** {username} **Vitorias/Derrotas:** {winLossRation} **Pontos:** {points}'
+
+
+  await ctx.send(file=discord.File('assets/lol_banner.png'))
+  await ctx.message.channel.send(text)
+  
 
 
 # <---------------------------------- TTS ------------------------------------------------------>
