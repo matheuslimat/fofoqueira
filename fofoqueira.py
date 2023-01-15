@@ -6,6 +6,7 @@ import random
 import json
 import re
 from datetime import datetime
+import asyncio
 
 client = commands.Bot(command_prefix='f!', intents=discord.Intents.all())
 
@@ -15,6 +16,19 @@ lista_de_vendas = []
 
 # Remover Help padrão
 client.remove_command('help')
+
+@client.event
+async def on_ready():
+    channel = discord.utils.get(client.get_all_channels(), name='fofoqueira') # Substitua 'channel-name' pelo nome do canal
+    while True:
+        await channel.send(''' Caros membros do nosso servidor do Discord,
+
+É importante que todos sigam as regras para garantir que esteja um ambiente agradável e seguro para todos. Com isso em mente, pedimos que vocês não desrespeitem os outros, não flodem (enviem mensagens desnecessárias ou irrelevantes), não mintam, não causem intrigas e não briguem por questões políticas.
+
+Lembre-se de que todos merecem ser tratados com respeito e dignidade. Se você vir algo que viole essas regras, por favor, informe a um moderador imediatamente. Nós trabalhamos juntos para garantir que este seja um espaço seguro e divertido para todos.
+
+Obrigado por sua cooperação e divertam-se no nosso servidor! ''')
+        await asyncio.sleep(3600) # Aguarda 1 hora (3600 segundos) antes de enviar a próxima mensagem
 
 @client.command()
 async def vender(ctx, valor: float, *, produto: str):
