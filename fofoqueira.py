@@ -16,27 +16,25 @@ lista_de_vendas = []
 
 # Remover Help padrão
 client.remove_command('help')
-count = 0;
 
-@client.event
-async def on_ready():
-    channel = discord.utils.get(client.get_all_channels(), name='fofoqueira') # Substitua 'channel-name' pelo nome do canal
-    while True:
-        await channel.send(''' Caros membros do nosso servidor do Discord,
+# @client.event
+# async def on_ready():
+#     channel = discord.utils.get(client.get_all_channels(), name='fofoqueira') # Substitua 'channel-name' pelo nome do canal
+#     while True:
+#         await channel.send(''' Caros membros do nosso servidor do Discord,
 
-É importante que todos sigam as regras para garantir que esteja um ambiente agradável e seguro para todos. Com isso em mente, pedimos que vocês não desrespeitem os outros, não flodem (enviem mensagens desnecessárias ou irrelevantes), não mintam, não causem intrigas e não briguem por questões políticas.
+# É importante que todos sigam as regras para garantir que esteja um ambiente agradável e seguro para todos. Com isso em mente, pedimos que vocês não desrespeitem os outros, não flodem (enviem mensagens desnecessárias ou irrelevantes), não mintam, não causem intrigas e não briguem por questões políticas.
 
-Lembre-se de que todos merecem ser tratados com respeito e dignidade. Se você vir algo que viole essas regras, por favor, informe a um moderador imediatamente. Nós trabalhamos juntos para garantir que este seja um espaço seguro e divertido para todos.
+# Lembre-se de que todos merecem ser tratados com respeito e dignidade. Se você vir algo que viole essas regras, por favor, informe a um moderador imediatamente. Nós trabalhamos juntos para garantir que este seja um espaço seguro e divertido para todos.
 
-Obrigado por sua cooperação e divertam-se no nosso servidor! ''')
-        await asyncio.sleep(3600) # Aguarda 1 hora (3600 segundos) antes de enviar a próxima mensagem
+# Obrigado por sua cooperação e divertam-se no nosso servidor! ''')
+#         await asyncio.sleep(3600) # Aguarda 1 hora (3600 segundos) antes de enviar a próxima mensagem
 
 @client.command()
-async def vender(ctx, valor: float, produto: str, *,pix: str):
+async def vender(ctx, valor: float, pix: str, *,produto: str):
   author = ctx.message.author
-  venda = {id: count, 'author': str(author), 'produto': produto, 'valor': valor , 'pix': pix}
+  venda = {'author': str(author), 'produto': produto, 'valor': valor , 'pix': pix, 'id' : len(lista_de_vendas) + 1}
   lista_de_vendas.append(venda)
-  count = count + 1
   await ctx.send(f'O produto "{produto}" foi adicionado à lista de vendas no valor de R$ {valor}')
 
 @client.command()
@@ -46,26 +44,25 @@ async def vendas(ctx):
     return
   response = '**Lista de vendas:**\n'
   for venda in lista_de_vendas:
-    response += f'O produto de chave {id} de nome {venda["produto"]} está por R$ {venda["valor"]}, o usuario ({venda["author"]} esta vendendo!)\n'
+    response += f'O produto de id {venda["id"]} e possui o nome {venda["produto"]} está por R$ {venda["valor"]}, o usuario ({venda["author"]} esta vendendo!)\n'
   await ctx.send(response)
 
 @client.command()
 async def pix(ctx, valor: int):
-  for i, item in range(lista_de_vendas):
-    if item.id == valor:
-      del lista_de_vendas[i];
-      await ctx.send(f'Esta venda possui o pix: {item.pix}')
-      await ctx.send(file=discord.File('assets/faz_o-pix.png'))
+  for item in lista_de_vendas:
+    if item["id"] == valor:
+      await ctx.send(f'Esta venda possui o pix: {item["pix"]}')
+      await ctx.send(file=discord.File('assets/faz_o_pix.png'))
       return
   await ctx.send(f'Não há venda cadastrada com o id fornecido.') 
 
 @client.command()
 async def remover_venda(ctx, valor: int):
   author = ctx.message.author
-  for i, item in range(lista_de_vendas):
-    if item.id == valor:
-      if (author == item.author):
-        del lista_de_vendas[i];
+  for i, item in enumerate(lista_de_vendas):
+    if item["id"] == valor:
+      if author == item["author"]:
+        del lista_de_vendas[i]
         await ctx.send(f'Venda removida com sucesso!')
         return
       else:
