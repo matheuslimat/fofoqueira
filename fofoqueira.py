@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from decouple import config
 import requests
 import random
@@ -7,6 +7,7 @@ import json
 import re
 from datetime import datetime
 import asyncio
+import time
 
 client = commands.Bot(command_prefix='f!', intents=discord.Intents.all())
 
@@ -17,25 +18,39 @@ lista_de_vendas = []
 # Remover Help padrão
 client.remove_command('help')
 
-# @client.event
-# async def on_ready():
-#     channel = discord.utils.get(client.get_all_channels(), name='fofoqueira') # Substitua 'channel-name' pelo nome do canal
-#     while True:
-#         await channel.send(''' Caros membros do nosso servidor do Discord,
+@tasks.loop(minutes=59.0)
+async def enviar_mensagem_bazar():
+    channel = discord.utils.get(client.get_all_channels(), name='bazar-do-leigo') # Substitua 'channel-name' pelo nome do canal
+    response = ""
+    for venda in lista_de_vendas:
+        embed=discord.Embed(title="Items a Venda", url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg", description=random.choice(["Você não vai querer perder essa oportunidade! ", "Corre lá! Mas lembre-se que você não é parça do Neymar...", "Não deixe essa oportunidade passar! ","Não fique de fora! Aproveite pra dar o golpe! ","Não perca essa chance! Vai ser como roubar doce de criança. ","Não perca essa oportunidade única de fazer merda! "]), color=0xff0000)
+        embed.set_author(name="Leigo: " + venda["author"], icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h")
+        embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+        embed.add_field(name="Produto:", value=venda["produto"], inline=True)
+        embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
+        await channel.send(embed=embed)
 
-# É importante que todos sigam as regras para garantir que esteja um ambiente agradável e seguro para todos. Com isso em mente, pedimos que vocês não desrespeitem os outros, não flodem (enviem mensagens desnecessárias ou irrelevantes), não mintam, não causem intrigas e não briguem por questões políticas.
+    if (len(lista_de_vendas) == 0):
+      response = random.choice(["**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**", "**Não tem nada a venda? Como pode...**", "**Eu só queria comprar uma merdinha...**","**Anuncia ae, esse bazar ta com teia de aranha já!**","**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**"])
+      await channel.send(response)
 
-# Lembre-se de que todos merecem ser tratados com respeito e dignidade. Se você vir algo que viole essas regras, por favor, informe a um moderador imediatamente. Nós trabalhamos juntos para garantir que este seja um espaço seguro e divertido para todos.
-
-# Obrigado por sua cooperação e divertam-se no nosso servidor! ''')
-#         await asyncio.sleep(3600) # Aguarda 1 hora (3600 segundos) antes de enviar a próxima mensagem
+@client.event
+async def on_ready():
+    enviar_mensagem_bazar.start()
 
 @client.command()
 async def vender(ctx, valor: float, pix: str, *,produto: str):
   author = ctx.message.author
+
+  embed=discord.Embed(title="Produto", url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg", description=random.choice(["Você não vai querer perder essa oportunidade! ", "Corre lá! Mas lembre-se que você não é parça do Neymar...", "Não deixe essa oportunidade passar! ","Não fique de fora! Aproveite pra dar o golpe! ","Não perca essa chance! Vai ser como roubar doce de criança. ","Não perca essa oportunidade única de fazer merda! "]), color=0xff0000)
+  embed.set_author(name="Leigo: " + str(author), icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h")
+  embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+  embed.add_field(name="Produto:", value=produto, inline=True)
+  embed.add_field(name="Preço:", value="R$ " + str(valor), inline=True)
+  embed.add_field(name="Chave Pix:", value=pix, inline=True)
   venda = {'author': str(author), 'produto': produto, 'valor': valor , 'pix': pix, 'id' : len(lista_de_vendas) + 1}
   lista_de_vendas.append(venda)
-  await ctx.send(f'O produto "{produto}" foi adicionado à lista de vendas no valor de R$ {valor}')
+  await ctx.send(embed=embed)
 
 @client.command()
 async def vendas(ctx):
@@ -48,13 +63,14 @@ async def vendas(ctx):
   await ctx.send(response)
 
 @client.command()
-async def pix(ctx, valor: int):
-  for item in lista_de_vendas:
-    if item["id"] == valor:
-      await ctx.send(f'Esta venda possui o pix: {item["pix"]}')
-      await ctx.send(file=discord.File('assets/faz_o_pix.png'))
-      return
-  await ctx.send(f'Não há venda cadastrada com o id fornecido.') 
+async def pix(ctx, author: str):
+    author = author.lower()
+    for item in lista_de_vendas:
+        if author in item["author"].lower():
+            await ctx.send(f'O pix de {item["author"]} é: {item["pix"]}')
+            await ctx.send(file=discord.File('assets/faz_o_pix.png'))
+            return
+    await ctx.send(f'Não há venda cadastrada com o author fornecido.')
 
 @client.command()
 async def remover_venda(ctx, valor: int):
@@ -98,6 +114,7 @@ async def show_commands(message):
 # < --------------------------------- LOL ------------------------------------------------------>
 @client.command()
 async def lol(ctx):
+  print("aquii")
   url = "https://league-of-legends-galore.p.rapidapi.com/api/getPlayerRank"
 
   nickName = ctx.message.content[5:]
@@ -110,7 +127,6 @@ async def lol(ctx):
 
   response = requests.request("GET", url, headers=headers, params=querystring)
   user = response.json()[0]
-  print(user)
 
   username = user['username']
   rank = user['rank']
@@ -137,11 +153,16 @@ async def lol(ctx):
   elif 'Challenger' in rank:
     emoji = '<:8641lolrank9challenger:1062550547049218098>' 
 
-  text = f'{emoji} **User:** {username} **Vitorias/Derrotas:** {winLossRation} **Pontos:** {points}'
+  embed=discord.Embed(title="RANK DO LOL", description=random.choice(["Esse leigo pensa que sabe jogar essa merda...", "Isso é um noob triste.......................", "Só joga de luquixi........................."]), color=0x00d5ff)
+  embed.set_thumbnail(url="https://static.dicionariodesimbolos.com.br/upload/2a/fe/significado-da-bandeira-lgbt-e-sua-historia-8_xl.png")
+  embed.add_field(name="User:", value=username, inline=False)
+  embed.add_field(name="Vitorias/Derrotas:", value=winLossRation, inline=False)
+  embed.add_field(name="Pontos:", value=points, inline=False)
+  embed.add_field(name="Rank:", value=emoji, inline=False)
 
 
+  await ctx.message.channel.send(embed=embed)
   await ctx.send(file=discord.File('assets/lol_banner.png'))
-  await ctx.message.channel.send(text)
   
 
 
@@ -202,7 +223,3 @@ async def exibir_imagem(message):
 
 TOKEN = config("TOKEN")
 client.run(TOKEN)
-
-
-
-
