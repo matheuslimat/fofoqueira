@@ -8,12 +8,14 @@ import re
 from datetime import datetime
 import asyncio
 import time
+import openai
 
 client = commands.Bot(command_prefix='f!', intents=discord.Intents.all())
 
 flood_limit = 5
 voice_join_times = {}
 lista_de_vendas = []
+openai.api_key = config("GPT-TOKEN")
 
 # Remover Help padrão
 client.remove_command('help')
@@ -220,6 +222,32 @@ async def exibir_imagem(message):
       await message.channel.send(url_imagem)
   else:
       await message.channel.send(f'O jogo {nome_jogo} não foi encontrado')
+
+# < ------------------------------- Chamando Chat GPY ------------------------------------->
+
+# Utilize o GPT-3 da OpenAI para responder perguntas
+@client.command()
+async def ask(ctx, *, question):
+    async with ctx.typing():
+        try:
+            # Envie a pergunta para o GPT-3
+            response = openai.Completion.create(
+                engine="text-davinci-002",
+                prompt=question,
+                max_tokens=3000,
+                n = 1,
+                stop=None,
+                temperature=0.5,
+            )
+            # Recupere a resposta do GPT-3
+            answer = response["choices"][0]["text"]
+            # Envie a resposta para o canal de texto
+            await ctx.send(answer)
+        except openai.exceptions.OpenAiError as e:
+            await ctx.send("Erro ao se comunicar com a API do OpenAI: " + str(e))
+        except KeyError as e:
+            await ctx.send("Erro ao processar a resposta da API do OpenAI: " + str(e))
+
 
 TOKEN = config("TOKEN")
 client.run(TOKEN)

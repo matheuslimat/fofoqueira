@@ -2,3 +2,4 @@ discord.py
 discord-ext-bot
 python-decouple
 requests
+openai
