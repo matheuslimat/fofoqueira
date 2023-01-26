@@ -7,6 +7,7 @@ import json
 import re
 from datetime import datetime
 import time
+import asyncio
 
 from datetime import datetime, timedelta
 
@@ -18,58 +19,13 @@ client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 flood_limit = 5
 voice_join_times = {}
 lista_de_vendas = []
+reminders = []
 
 # Remover Help padrão
 client.remove_command("help")
 
 
-@tasks.loop(minutes=59.0)
-async def enviar_mensagem_bazar():
-    channel = discord.utils.get(
-        client.get_all_channels(), name="bazar-do-leigo"
-    )  # Substitua 'channel-name' pelo nome do canal
-    response = ""
-    for venda in lista_de_vendas:
-        embed = discord.Embed(
-            title="Items a Venda",
-            url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
-            description=random.choice(
-                [
-                    "Você não vai querer perder essa oportunidade! ",
-                    "Corre lá! Mas lembre-se que você não é parça do Neymar...",
-                    "Não deixe essa oportunidade passar! ",
-                    "Não fique de fora! Aproveite pra dar o golpe! ",
-                    "Não perca essa chance! Vai ser como roubar doce de criança. ",
-                    "Não perca essa oportunidade única de fazer merda! ",
-                ]
-            ),
-            color=0xFF0000,
-        )
-        embed.set_author(
-            name="Leigo: " + venda["author"],
-            icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
-        )
-        embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
-        embed.add_field(name="Produto:", value=venda["produto"], inline=True)
-        embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
-        await channel.send(embed=embed)
 
-    if len(lista_de_vendas) == 0:
-        response = random.choice(
-            [
-                "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
-                "**Não tem nada a venda? Como pode...**",
-                "**Eu só queria comprar uma merdinha...**",
-                "**Anuncia ae, esse bazar ta com teia de aranha já!**",
-                "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
-            ]
-        )
-        await channel.send(response)
-
-
-@client.event
-async def on_ready():
-    enviar_mensagem_bazar.start()
 
 
 @client.command()
@@ -180,7 +136,6 @@ async def show_commands(message):
 # < --------------------------------- LOL ------------------------------------------------------>
 @client.command()
 async def lol(ctx):
-    print("aquii")
     url = "https://league-of-legends-galore.p.rapidapi.com/api/getPlayerRank"
 
     nickName = ctx.message.content[5:]
@@ -241,6 +196,53 @@ async def lol(ctx):
     await ctx.message.channel.send(embed=embed)
     await ctx.send(file=discord.File("assets/lol_banner.png"))
 
+@tasks.loop(minutes=59.0)
+async def enviar_mensagem_bazar():
+    channel = discord.utils.get(
+        client.get_all_channels(), name="bazar-do-leigo"
+    )  # Substitua 'channel-name' pelo nome do canal
+    response = ""
+    for venda in lista_de_vendas:
+        embed = discord.Embed(
+            title="Items a Venda",
+            url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
+            description=random.choice(
+                [
+                    "Você não vai querer perder essa oportunidade! ",
+                    "Corre lá! Mas lembre-se que você não é parça do Neymar...",
+                    "Não deixe essa oportunidade passar! ",
+                    "Não fique de fora! Aproveite pra dar o golpe! ",
+                    "Não perca essa chance! Vai ser como roubar doce de criança. ",
+                    "Não perca essa oportunidade única de fazer merda! ",
+                ]
+            ),
+            color=0xFF0000,
+        )
+        embed.set_author(
+            name="Leigo: " + venda["author"],
+            icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
+        )
+        embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+        embed.add_field(name="Produto:", value=venda["produto"], inline=True)
+        embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
+        await channel.send(embed=embed)
+
+    if len(lista_de_vendas) == 0:
+        response = random.choice(
+            [
+                "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
+                "**Não tem nada a venda? Como pode...**",
+                "**Eu só queria comprar uma merdinha...**",
+                "**Anuncia ae, esse bazar ta com teia de aranha já!**",
+                "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
+            ]
+        )
+        await channel.send(response)
+
+
+@client.event
+async def on_ready():
+    enviar_mensagem_bazar.start()
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
@@ -267,6 +269,56 @@ async def on_voice_state_update(member, before, after):
         )
         
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
+
+@client.command()
+async def avise(ctx):
+    message = ctx.message
+    args = message.content.split()
+    game_name = " ".join(args[1:-1])
+    target_price = float(args[-1])
+
+    r = requests.get(
+    f"https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={game_name}"
+    )
+    data = json.loads(r.text)
+
+    found = False
+    if data["total"] > 0:
+        game = data["items"][0]
+        if "price" in game:
+            price = game["price"]["final"] / 100
+
+            found = True
+
+            if price <= target_price:
+                await message.channel.send(f"**{game_name} já está custando R${price} agora!**")
+            else:
+                reminders.append({"user": message.author.name, "game": game_name, "price": target_price})
+                await message.channel.send(f"**Caro {message.author.name}, quando {game_name} atingir R${target_price} irei avisar a você.**")
+
+    if not found:
+        await message.channel.send(f"**Não foi possível encontrar o jogo '{game_name}' na Steam.**")
+
+
+
+@tasks.loop(minutes=59.0)
+async def check_reminders():
+    for reminder in reminders:
+        r = requests.get(
+        f"https://store.steampowered.com/api/storesearch?cc=BR&l=portuguese&term={reminder['game']}"
+        )
+        data = json.loads(r.text)
+        if data["total"] > 0:
+            game = data["items"][0]
+            if "price" in game:
+                price = game["price"]["final"] / 100
+                if price <= reminder["price"]:
+                    channel = client.get_channel('fofoqueira')
+                    await channel.send(f"**{reminder['user']} pediu para lembrar: {reminder['game']} está custando R${price} agora!**")
+                    reminders.remove(reminder)
+                    break
+
+
 async def obter_preco_jogo(message):
     nome_jogo = message.content[7:]
     nome_jogo = nome_jogo.replace(" ", "%20")
