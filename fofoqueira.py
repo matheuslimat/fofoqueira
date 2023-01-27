@@ -196,7 +196,7 @@ async def lol(ctx):
     await ctx.message.channel.send(embed=embed)
     await ctx.send(file=discord.File("assets/lol_banner.png"))
 
-@tasks.loop(minutes=59.0)
+@tasks.loop(minutes=120.0)
 async def enviar_mensagem_bazar():
     channel = discord.utils.get(
         client.get_all_channels(), name="bazar-do-leigo"
