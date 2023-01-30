@@ -196,7 +196,7 @@ async def lol(ctx):
     await ctx.message.channel.send(embed=embed)
     await ctx.send(file=discord.File("assets/lol_banner.png"))
 
-@tasks.loop(minutes=120.0)
+@tasks.loop(minutes=300.0)
 async def enviar_mensagem_bazar():
     channel = discord.utils.get(
         client.get_all_channels(), name="bazar-do-leigo"
@@ -214,6 +214,7 @@ async def enviar_mensagem_bazar():
                     "Não fique de fora! Aproveite pra dar o golpe! ",
                     "Não perca essa chance! Vai ser como roubar doce de criança. ",
                     "Não perca essa oportunidade única de fazer merda! ",
+                    "The Bazar da fofoqueira venda e compre já never ends.",
                 ]
             ),
             color=0xFF0000,
@@ -235,6 +236,9 @@ async def enviar_mensagem_bazar():
                 "**Eu só queria comprar uma merdinha...**",
                 "**Anuncia ae, esse bazar ta com teia de aranha já!**",
                 "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
+                "**Anuncia bb que eu to carente já**",
+                "**Anuncie aqui, bota tudo, lá ele!!!**",
+                "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
             ]
         )
         await channel.send(response)
