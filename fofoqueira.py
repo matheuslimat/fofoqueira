@@ -242,7 +242,7 @@ async def enviar_mensagem_bazar():
             ]
         )
         await channel.send(response)
-
+    await check_epic_games()
 
 @client.event
 async def on_ready():
@@ -385,25 +385,28 @@ async def exibir_imagem(message):
 
 
 # < ----------------------- Gratis EPIC --------------------->
-@tasks.loop(minutes=300.0)
-async def check_reminders():
+async def check_epic_games():
+    channel = discord.utils.get(
+        client.get_all_channels(), name="jogo-gratis-ou-da-epic"
+    )  # Substitua 'channel-name' pelo nome do canal
     url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=pt-BR&country=BR&allowCountries=BR"
 
     response = requests.get(url)
     data = json.loads(response.text)
 
-    free_games = data["data"]
-    channel = client.get_channel('fofoqueira')
+    free_games = data["data"]["Catalog"]["searchStore"]["elements"]
 
     if free_games:
         for game in free_games:
-            title = game["title"]
-            original_price = game["price"]["originalPrice"]
-            discount_price = game["price"]["discountPrice"]
-            url = game["url"]
+            if(game["status"] == "ACTIVE"):
+                title = game["title"]
+                original_price = game["price"]["totalPrice"]["fmtPrice"]["originalPrice"]
+                discount_price = game["price"]["totalPrice"]["fmtPrice"]["discountPrice"]
+                url_game = game["keyImages"][0]["url"]
 
-            message = f"**Jogo baratos ou gratuitos disponível: ** {title} (Preço original: {original_price} | Preço com desconto: {discount_price}) - {url}"
-            await channel.send(message)
+
+                message = f"**Jogo baratos ou gratuitos disponível: ** {title} (Preço original: {original_price} | Preço com desconto: {discount_price}) - {url_game}"
+                await channel.send(message)
     else:
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
 TOKEN = config("TOKEN")
