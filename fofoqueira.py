@@ -384,5 +384,27 @@ async def exibir_imagem(message):
         await message.channel.send(f"O jogo {nome_jogo} não foi encontrado")
 
 
+# < ----------------------- Gratis EPIC --------------------->
+@tasks.loop(minutes=300.0)
+async def check_reminders():
+    url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=pt-BR&country=BR&allowCountries=BR"
+
+    response = requests.get(url)
+    data = json.loads(response.text)
+
+    free_games = data["data"]
+    channel = client.get_channel('fofoqueira')
+
+    if free_games:
+        for game in free_games:
+            title = game["title"]
+            original_price = game["price"]["originalPrice"]
+            discount_price = game["price"]["discountPrice"]
+            url = game["url"]
+
+            message = f"**Jogo baratos ou gratuitos disponível: ** {title} (Preço original: {original_price} | Preço com desconto: {discount_price}) - {url}"
+            await channel.send(message)
+    else:
+        await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
 TOKEN = config("TOKEN")
 client.run(TOKEN)
