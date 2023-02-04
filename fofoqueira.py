@@ -242,7 +242,7 @@ async def enviar_mensagem_bazar():
             ]
         )
         await channel.send(response)
-    await check_epic_games()
+    # await check_epic_games()
 
 @client.event
 async def on_ready():
