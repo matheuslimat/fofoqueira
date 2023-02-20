@@ -26,8 +26,6 @@ client.remove_command("help")
 
 
 
-
-
 @client.command()
 async def vender(ctx, valor: float, pix: str, *, produto: str):
     author = ctx.message.author
@@ -302,6 +300,22 @@ async def avise(ctx):
 
     if not found:
         await message.channel.send(f"**Não foi possível encontrar o jogo '{game_name}' na Steam.**")
+
+# <---------------------------- Lodout Pedro ----------------------------------------->
+
+@client.command()
+async def lodout(ctx, author: str):
+    if author == 'pedro':
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076944158587109486/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945030603866143/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945096534138960/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945215467823194/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945627491074119/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945684097417276/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945739684524072/image.png")
+        await ctx.send(f"https://cdn.discordapp.com/attachments/767037529966641175/1076945783699558563/image.png")
+    else:
+        await ctx.send(f"**{author} Não cadastrou lodout! **")
 
 
 
