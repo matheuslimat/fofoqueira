@@ -20,6 +20,12 @@ voice_join_times = {}
 lista_de_vendas = []
 reminders = []
 current_status = True
+
+client_id_twitch = config("CLIENT_ID_TWITCH")
+client_secret_twitch = config("CLIENT_SECRET_TWITCH")
+grant_type_twitch = "client_credentials"
+
+
 streamer_map = {}
 
 streamer_map["ciciliacq"] = False
@@ -464,17 +470,13 @@ async def sendMensagem(msg):
                 await channel.send(msg)
 
 def get_channel_token():
-    client_id = 'iod37fcyvoy55zt9smjsx6eimfkq7r'
-    client_secret = "0noqi4csasuevguhw9ifk0tm2y1pm9"
-    grant_type = "client_credentials"
-      
-    response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id}&client_secret={client_secret}&grant_type={grant_type}')
+    response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id_twitch}&client_secret={client_secret_twitch}&grant_type={grant_type_twitch}')
     data = json.loads(response.text)
     return data["access_token"]
 
 def get_stream_data(accesstoken, user):
     headers = {
-        'Client-ID': 'iod37fcyvoy55zt9smjsx6eimfkq7r',
+        'Client-ID': client_id_twitch,
         "Authorization" : f"Bearer {accesstoken}"
     }
     response = requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
