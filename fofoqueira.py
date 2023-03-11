@@ -6,8 +6,7 @@ import random
 import json
 import re
 from datetime import datetime
-import time
-import asyncio
+from discord.ext import tasks
 
 from datetime import datetime, timedelta
 
@@ -20,6 +19,12 @@ flood_limit = 5
 voice_join_times = {}
 lista_de_vendas = []
 reminders = []
+current_status = True
+streamer_map = {}
+
+streamer_map["ciciliacq"] = False
+streamer_map["panicobrx7"] = False
+streamer_map["mlsouza22"] = False
 
 # Remover Help padrão
 client.remove_command("help")
@@ -62,6 +67,10 @@ async def vender(ctx, valor: float, pix: str, *, produto: str):
     }
     lista_de_vendas.append(venda)
     await ctx.send(embed=embed)
+
+@client.command()
+async def twitch(ctx, valor: str):
+    streamer_map[valor] = False
 
 
 @client.command()
@@ -245,6 +254,7 @@ async def enviar_mensagem_bazar():
 @client.event
 async def on_ready():
     enviar_mensagem_bazar.start()
+    check_stream.start()
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
@@ -423,5 +433,58 @@ async def check_epic_games():
                 await channel.send(message)
     else:
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
+
+
+@tasks.loop(seconds=5)
+async def check_stream():
+    for chave, valor in streamer_map.items():
+        print(f'chave {chave} current {valor}')
+        last_status = valor
+        token = get_channel_token()
+        stream_data = get_stream_data(token, chave)
+        current_status = stream_data["is_live"]
+        streamer_name = stream_data["broadcaster_login"]
+        print(f"status atual {current_status}")
+        if current_status != last_status:
+            streamer_map[chave] = current_status
+            if current_status == True:
+                channel = discord.utils.get(client.get_all_channels(), name='lives')
+                print(channel)
+                await sendMensagem(f'O streamer {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}')
+            else :
+                channel = discord.utils.get(client.get_all_channels(), name='lives')
+                print(channel)
+
+                await sendMensagem(f'O streamer {streamer_name} está offline.')
+
+async def sendMensagem(msg):
+    for guild in client.guilds:
+        for channel in guild.text_channels:
+            if channel.name == 'lives':
+                await channel.send(msg)
+
+def get_channel_token():
+    client_id = 'iod37fcyvoy55zt9smjsx6eimfkq7r'
+    client_secret = "0noqi4csasuevguhw9ifk0tm2y1pm9"
+    grant_type = "client_credentials"
+      
+    response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id}&client_secret={client_secret}&grant_type={grant_type}')
+    data = json.loads(response.text)
+    return data["access_token"]
+
+def get_stream_data(accesstoken, user):
+    headers = {
+        'Client-ID': 'iod37fcyvoy55zt9smjsx6eimfkq7r',
+        "Authorization" : f"Bearer {accesstoken}"
+    }
+    response = requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
+    data = json.loads(response.text)["data"]
+    for item in data:
+        if item["broadcaster_login"] == user:
+            return item
+    return None
+    
+
+
 TOKEN = config("TOKEN")
 client.run(TOKEN)
