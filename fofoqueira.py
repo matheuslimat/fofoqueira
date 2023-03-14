@@ -5,10 +5,9 @@ import requests
 import random
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from discord.ext import tasks
 
-from datetime import datetime, timedelta
 
 
 last_question_time = {}
@@ -442,16 +441,14 @@ async def check_epic_games():
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
 
 
-@tasks.loop(seconds=5)
+@tasks.loop(seconds=10)
 async def check_stream():
     for chave, valor in streamer_map.items():
-        print(f'chave {chave} current {valor}')
         last_status = valor
         tokenTwitch = get_channel_token()
         stream_data = get_stream_data(tokenTwitch, chave)
         current_status = stream_data["is_live"]
         streamer_name = stream_data["broadcaster_login"]
-        print(f"status atual {current_status}")
         if current_status != last_status:
             streamer_map[chave] = current_status
             if current_status == True:
@@ -471,11 +468,13 @@ async def sendMensagem(msg):
                 await channel.send(msg)
 
 def get_channel_token():
-    if updateDateToken is None and updateDateToken < datetime.datetime.now():
+    global updateDateToken
+    global tokenTwitch
+    if updateDateToken is None or updateDateToken < datetime.now():
         response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id_twitch}&client_secret={client_secret_twitch}&grant_type={grant_type_twitch}')
         data = json.loads(response.text)
-        now = datetime.datetime.now()
-        token_time = datetime.timedelta(seconds=data["expires_in"])
+        now = datetime.now()
+        token_time = timedelta(seconds=data["expires_in"])
         updateDateToken = now + token_time
         return data["access_token"]
     else:
