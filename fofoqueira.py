@@ -25,7 +25,8 @@ client_id_twitch = config("CLIENT_ID_TWITCH")
 client_secret_twitch = config("CLIENT_SECRET_TWITCH")
 grant_type_twitch = "client_credentials"
 
-
+updateDateToken = None
+tokenTwitch = None
 streamer_map = {}
 
 streamer_map["ciciliacq"] = False
@@ -446,8 +447,8 @@ async def check_stream():
     for chave, valor in streamer_map.items():
         print(f'chave {chave} current {valor}')
         last_status = valor
-        token = get_channel_token()
-        stream_data = get_stream_data(token, chave)
+        tokenTwitch = get_channel_token()
+        stream_data = get_stream_data(tokenTwitch, chave)
         current_status = stream_data["is_live"]
         streamer_name = stream_data["broadcaster_login"]
         print(f"status atual {current_status}")
@@ -470,9 +471,15 @@ async def sendMensagem(msg):
                 await channel.send(msg)
 
 def get_channel_token():
-    response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id_twitch}&client_secret={client_secret_twitch}&grant_type={grant_type_twitch}')
-    data = json.loads(response.text)
-    return data["access_token"]
+    if updateDateToken is None and updateDateToken < datetime.datetime.now():
+        response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id_twitch}&client_secret={client_secret_twitch}&grant_type={grant_type_twitch}')
+        data = json.loads(response.text)
+        now = datetime.datetime.now()
+        token_time = datetime.timedelta(seconds=data["expires_in"])
+        updateDateToken = now + token_time
+        return data["access_token"]
+    else:
+        return tokenTwitch
 
 def get_stream_data(accesstoken, user):
     headers = {
