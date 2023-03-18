@@ -450,13 +450,11 @@ async def check_stream():
             streamer_map[chave] = current_status
             if current_status == True:
                 channel = discord.utils.get(client.get_all_channels(), name='lives')
-                print(channel)
-                await sendMensagem(f'O streamer {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}')
+                await sendMensagem(f'O(a) streamer {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}')
             else :
                 channel = discord.utils.get(client.get_all_channels(), name='lives')
-                print(channel)
 
-                await sendMensagem(f'O streamer {streamer_name} está offline.')
+                await sendMensagem(f'O(a) streamer {streamer_name} está offline.')
 
 async def sendMensagem(msg):
     for guild in client.guilds:
