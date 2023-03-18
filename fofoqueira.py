@@ -19,10 +19,8 @@ voice_join_times = {}
 lista_de_vendas = []
 reminders = []
 current_status = True
-
+token_twitch = config("TOKEN_TWITCH")
 client_id_twitch = config("CLIENT_ID_TWITCH")
-client_secret_twitch = config("CLIENT_SECRET_TWITCH")
-grant_type_twitch = "client_credentials"
 
 updateDateToken = None
 tokenTwitch = None
@@ -441,11 +439,10 @@ async def check_epic_games():
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
 
 
-@tasks.loop(seconds=10)
+@tasks.loop(seconds=60)
 async def check_stream():
     for chave, valor in streamer_map.items():
         last_status = valor
-        tokenTwitch = get_channel_token()
         stream_data = get_stream_data(tokenTwitch, chave)
         current_status = stream_data["is_live"]
         streamer_name = stream_data["broadcaster_login"]
@@ -467,23 +464,10 @@ async def sendMensagem(msg):
             if channel.name == 'lives':
                 await channel.send(msg)
 
-def get_channel_token():
-    global updateDateToken
-    global tokenTwitch
-    if updateDateToken is None or updateDateToken < datetime.now():
-        response = requests.post(f'https://id.twitch.tv/oauth2/token?client_id={client_id_twitch}&client_secret={client_secret_twitch}&grant_type={grant_type_twitch}')
-        data = json.loads(response.text)
-        now = datetime.now()
-        token_time = timedelta(seconds=data["expires_in"])
-        updateDateToken = now + token_time
-        return data["access_token"]
-    else:
-        return tokenTwitch
-
 def get_stream_data(accesstoken, user):
     headers = {
         'Client-ID': client_id_twitch,
-        "Authorization" : f"Bearer {accesstoken}"
+        "Authorization" : f"Bearer {token_twitch}"
     }
     response = requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
     data = json.loads(response.text)["data"]
