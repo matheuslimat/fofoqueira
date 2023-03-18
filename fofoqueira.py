@@ -443,26 +443,37 @@ async def check_epic_games():
 async def check_stream():
     for chave, valor in streamer_map.items():
         last_status = valor
-        stream_data = get_stream_data(tokenTwitch, chave)
+        stream_data = get_stream_data(chave)
         current_status = stream_data["is_live"]
         streamer_name = stream_data["broadcaster_login"]
         if current_status != last_status:
             streamer_map[chave] = current_status
             if current_status == True:
-                channel = discord.utils.get(client.get_all_channels(), name='lives')
-                await sendMensagem(f'O(a) streamer {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}')
-            else :
-                channel = discord.utils.get(client.get_all_channels(), name='lives')
+                if (streamer_name == "ciciliacq"):
+                    await sendMensagem(f'A {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}', streamer_name)
+                else:
+                    await sendMensagem(f'O(a) streamer {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}', streamer_name)
+            else:
+                if (streamer_name == "ciciliacq"):
+                    await sendMensagem(f'A {streamer_name} está offline.', streamer_name)
+                else:
+                    await sendMensagem(f'O(a) streamer {streamer_name} está offline.', streamer_name)
 
-                await sendMensagem(f'O(a) streamer {streamer_name} está offline.')
 
-async def sendMensagem(msg):
+async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
-        for channel in guild.text_channels:
-            if channel.name == 'lives':
-                await channel.send(msg)
+        if guild.id == 268306210313207808:
+            for channel in guild.text_channels:
+                if channel.name == 'lives' and streamer_name == "ciciliacq":
+                    await channel.send(f'@everyone\n{msg}')
+                elif channel.name == 'lives':
+                    await channel.send(msg)
+        else:
+            for channel in guild.text_channels:
+                if channel.name == 'lives':
+                    await channel.send(msg)
 
-def get_stream_data(accesstoken, user):
+def get_stream_data(user):
     headers = {
         'Client-ID': client_id_twitch,
         "Authorization" : f"Bearer {token_twitch}"
