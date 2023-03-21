@@ -460,17 +460,23 @@ async def check_stream():
                     await sendMensagem(f'O(a) streamer {streamer_name} está offline.', streamer_name)
 
 
+def removeCaractere(palavra):
+    texto_sem_traco = re.sub(r'[-_]', '', palavra)
+    texto_sem_emojis = remover_emojis(texto_sem_traco)
+    texto_sem_especiais = re.sub(r'[^\w\s]', '', texto_sem_emojis)
+    return texto_sem_especiais
+
 async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
         if guild.id == 268306210313207808:
             for channel in guild.text_channels:
-                if channel.name == 'lives' and streamer_name == "ciciliacq":
+                if removeCaractere(channel.name).upper() == 'lives'.upper() and streamer_name == "ciciliacq":
                     await channel.send(f'@everyone\n{msg}')
-                elif channel.name == 'lives':
+                elif removeCaractere(channel.name).upper() == 'lives'.upper():
                     await channel.send(msg)
         else:
             for channel in guild.text_channels:
-                if channel.name == 'lives':
+                if removeCaractere(channel.name).upper() == 'lives'.upper():
                     await channel.send(msg)
 
 async def get_stream_data(user):
@@ -478,7 +484,7 @@ async def get_stream_data(user):
         'Client-ID': client_id_twitch,
         "Authorization" : f"Bearer {token_twitch}"
     }
-    response = requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
+    response =  equests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
     data = json.loads(response.text)["data"]
     for item in data:
         if item["broadcaster_login"] == user:
