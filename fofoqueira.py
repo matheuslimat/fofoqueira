@@ -439,11 +439,11 @@ async def check_epic_games():
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
 
 
-@tasks.loop(seconds=60)
+@tasks.loop(seconds=5)
 async def check_stream():
     for chave, valor in streamer_map.items():
         last_status = valor
-        stream_data = get_stream_data(chave)
+        stream_data = await get_stream_data(chave)
         current_status = stream_data["is_live"]
         streamer_name = stream_data["broadcaster_login"]
         if current_status != last_status:
@@ -473,7 +473,7 @@ async def sendMensagem(msg, streamer_name):
                 if channel.name == 'lives':
                     await channel.send(msg)
 
-def get_stream_data(user):
+async def get_stream_data(user):
     headers = {
         'Client-ID': client_id_twitch,
         "Authorization" : f"Bearer {token_twitch}"
