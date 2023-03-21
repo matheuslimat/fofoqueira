@@ -3,3 +3,4 @@ discord-ext-bot
 python-decouple
 requests
 openai
+unidecode

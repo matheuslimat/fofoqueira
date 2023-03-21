@@ -7,6 +7,7 @@ import json
 import re
 from datetime import datetime, timedelta
 from discord.ext import tasks
+from unidecode import unidecode
 
 
 
@@ -464,7 +465,8 @@ def removeCaractere(palavra):
     texto_sem_traco = re.sub(r'[-_]', '', palavra)
     texto_sem_emojis = remover_emojis(texto_sem_traco)
     texto_sem_especiais = re.sub(r'[^\w\s]', '', texto_sem_emojis)
-    return texto_sem_especiais
+    texto_sem_acento = unidecode(texto_sem_especiais)
+    return texto_sem_acento
 
 async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
@@ -484,7 +486,7 @@ async def get_stream_data(user):
         'Client-ID': client_id_twitch,
         "Authorization" : f"Bearer {token_twitch}"
     }
-    response =  equests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
+    response =  requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
     data = json.loads(response.text)["data"]
     for item in data:
         if item["broadcaster_login"] == user:
