@@ -31,8 +31,25 @@ streamer_map["ciciliacq"] = False
 streamer_map["panicobrx7"] = False
 streamer_map["mlsouza22"] = False
 
+sendChannelTwitch = {}
+
+sendChannelTwitch[268306210313207808] = "LIVES"
+sendChannelTwitch[767037529966641173] = "LIVES"
+
 # Remover Help padrão
 client.remove_command("help")
+
+
+@client.command()
+async def twitch_notification(ctx, channel):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Você não tem permissão para usar esse comando.")
+        return
+    
+    server_id = ctx.guild.id
+
+    sendChannelTwitch[server_id] = channel
+    await ctx.send(f"Novo canal de notificação twitch, salvo!")
 
 
 
@@ -472,13 +489,30 @@ async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
         if guild.id == 268306210313207808:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == 'lives'.upper() and streamer_name == "ciciliacq":
+                if removeCaractere(channel.name).upper() == 'LIVES' and streamer_name == "ciciliacq":
                     await channel.send(f'@everyone\n{msg}')
-                elif removeCaractere(channel.name).upper() == 'lives'.upper():
+                elif removeCaractere(channel.name).upper() == 'LIVES':
                     await channel.send(msg)
         else:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == 'lives'.upper():
+                if removeCaractere(channel.name).upper() == 'LIVES':
+                    await channel.send(msg)
+
+async def sendMensagem(msg, streamer_name):
+    for guild in client.guilds:
+        channel = "LIVES"
+        if guild.id in sendChannelTwitch:
+            channel = sendChannelTwitch[guild.id]
+
+        if guild.id == 268306210313207808:
+            for channel in guild.text_channels:
+                if removeCaractere(channel.name).upper() == channel and streamer_name == "ciciliacq":
+                    await channel.send(f'@everyone\n{msg}')
+                elif removeCaractere(channel.name).upper() == channel:
+                    await channel.send(msg)
+        else:
+            for channel in guild.text_channels:
+                if removeCaractere(channel.name).upper() == channel:
                     await channel.send(msg)
 
 async def get_stream_data(user):
