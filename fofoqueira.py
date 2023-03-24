@@ -489,19 +489,19 @@ def removeCaractere(palavra):
 
 async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
-        channel = "LIVES"
-        # if guild.id in sendChannelTwitch:
-        #     channel = sendChannelTwitch[guild.id]
+        channelTwitch = "LIVES"
+        if guild.id in sendChannelTwitch:
+            channelTwitch = sendChannelTwitch[guild.id]
 
         if guild.id == 268306210313207808:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channel and streamer_name == "ciciliacq":
+                if removeCaractere(channel.name).upper() == channelTwitch and streamer_name == "ciciliacq":
                     await channel.send(f'@everyone\n{msg}')
-                elif removeCaractere(channel.name).upper() == channel:
+                elif removeCaractere(channel.name).upper() == channelTwitch:
                     await channel.send(msg)
         else:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channel:
+                if removeCaractere(channel.name).upper() == channelTwitch:
                     await channel.send(msg)
 
 async def get_stream_data(user):
