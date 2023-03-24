@@ -8,24 +8,26 @@ import re
 from datetime import datetime, timedelta
 from discord.ext import tasks
 from unidecode import unidecode
-
 import pymongo
-
-mongo_uri = config("URL_MONGODB")
-clientMongoDB = pymongo.MongoClient(mongo_uri)
-
-db = clientMongoDB['fofoqueira']
-twitchChannel = db['twitch_channel']
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 
-flood_limit = 5
-voice_join_times = {}
-lista_de_vendas = []
-reminders = []
-current_status = True
+mongo_uri = config("URL_MONGODB")
 token_twitch = config("TOKEN_TWITCH")
 client_id_twitch = config("CLIENT_ID_TWITCH")
+
+clientMongoDB = pymongo.MongoClient(mongo_uri)
+db = clientMongoDB['fofoqueira']
+
+twitchChannel = db['twitch_channel']
+bazar = db['bazar']
+
+
+flood_limit = 5
+voice_join_times = {}
+reminders = []
+current_status = True
+
 
 # Remover Help padrão
 client.remove_command("help")
@@ -79,7 +81,8 @@ async def vender(ctx, valor: float, pix: str, *, produto: str):
         "pix": pix,
         "id": len(lista_de_vendas) + 1,
     }
-    lista_de_vendas.append(venda)
+
+    bazar.update_one({"servidorId": str(ctx.guild.id)}, {"$addToSet": {"listaDeVendas": venda}})
     await ctx.send(embed=embed)
 
 @client.command()
@@ -101,6 +104,7 @@ async def add_channel_twitch(ctx, valor: str):
 
 @client.command()
 async def vendas(ctx):
+    lista_de_vendas = bazar.find({'servidorId': str(ctx.guild.id)})["listaDeVendas"]
     if not lista_de_vendas:
         await ctx.send("Não há vendas cadastradas")
         return
@@ -113,6 +117,7 @@ async def vendas(ctx):
 @client.command()
 async def pix(ctx, author: str):
     author = author.lower()
+    lista_de_vendas = bazar.find({'servidorId': str(ctx.guild.id)})["listaDeVendas"]
     for item in lista_de_vendas:
         if author in item["author"].lower():
             await ctx.send(f'O pix de {item["author"]} é: {item["pix"]}')
@@ -124,6 +129,7 @@ async def pix(ctx, author: str):
 @client.command()
 async def remover_venda(ctx, valor: int):
     author = ctx.message.author
+    lista_de_vendas = bazar.find()["listaDeVendas"]
     for i, item in enumerate(lista_de_vendas):
         if item["id"] == valor:
             if author == item["author"]:
@@ -231,51 +237,54 @@ async def lol(ctx):
 
 @tasks.loop(minutes=300.0)
 async def enviar_mensagem_bazar():
-    channel = discord.utils.get(
-        client.get_all_channels(), name="bazar-do-leigo"
-    )  # Substitua 'channel-name' pelo nome do canal
-    response = ""
-    for venda in lista_de_vendas:
-        embed = discord.Embed(
-            title="Items a Venda",
-            url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
-            description=random.choice(
-                [
-                    "Você não vai querer perder essa oportunidade! ",
-                    "Corre lá! Mas lembre-se que você não é parça do Neymar...",
-                    "Não deixe essa oportunidade passar! ",
-                    "Não fique de fora! Aproveite pra dar o golpe! ",
-                    "Não perca essa chance! Vai ser como roubar doce de criança. ",
-                    "Não perca essa oportunidade única de fazer merda! ",
-                    "The Bazar da fofoqueira venda e compre já never ends.",
-                ]
-            ),
-            color=0xFF0000,
-        )
-        embed.set_author(
-            name="Leigo: " + venda["author"],
-            icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
-        )
-        embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
-        embed.add_field(name="Produto:", value=venda["produto"], inline=True)
-        embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
-        await channel.send(embed=embed)
+    bazarDataBase = bazar.find()
+    for vendas in bazarDataBase:
+        lista_de_vendas = vendas["listaDeVendas"]
 
-    if len(lista_de_vendas) == 0:
-        response = random.choice(
-            [
-                "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
-                "**Não tem nada a venda? Como pode...**",
-                "**Eu só queria comprar uma merdinha...**",
-                "**Anuncia ae, esse bazar ta com teia de aranha já!**",
-                "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
-                "**Anuncia bb que eu to carente já**",
-                "**Anuncie aqui, bota tudo, lá ele!!!**",
-                "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
-            ]
-        )
-        await channel.send(response)
-    # await check_epic_games()
+        channel = discord.utils.get(
+            client.get_all_channels(), name="bazar-do-leigo"
+        )  # Substitua 'channel-name' pelo nome do canal
+        response = ""
+        for venda in lista_de_vendas:
+            embed = discord.Embed(
+                title="Items a Venda",
+                url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
+                description=random.choice(
+                    [
+                        "Você não vai querer perder essa oportunidade! ",
+                        "Corre lá! Mas lembre-se que você não é parça do Neymar...",
+                        "Não deixe essa oportunidade passar! ",
+                        "Não fique de fora! Aproveite pra dar o golpe! ",
+                        "Não perca essa chance! Vai ser como roubar doce de criança. ",
+                        "Não perca essa oportunidade única de fazer merda! ",
+                        "The Bazar da fofoqueira venda e compre já never ends.",
+                    ]
+                ),
+                color=0xFF0000,
+            )
+            embed.set_author(
+                name="Leigo: " + venda["author"],
+                icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
+            )
+            embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+            embed.add_field(name="Produto:", value=venda["produto"], inline=True)
+            embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
+            await channel.send(embed=embed)
+
+        if len(lista_de_vendas) == 0:
+            response = random.choice(
+                [
+                    "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
+                    "**Não tem nada a venda? Como pode...**",
+                    "**Eu só queria comprar uma merdinha...**",
+                    "**Anuncia ae, esse bazar ta com teia de aranha já!**",
+                    "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
+                    "**Anuncia bb que eu to carente já**",
+                    "**Anuncie aqui, bota tudo, lá ele!!!**",
+                    "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
+                ]
+            )
+            await channel.send(response)
 
 @client.event
 async def on_ready():
