@@ -9,6 +9,15 @@ from datetime import datetime, timedelta
 from discord.ext import tasks
 from unidecode import unidecode
 
+import pymongo
+
+
+
+mongo_uri = config("URL_MONGODB")
+client = pymongo.MongoClient(mongo_uri)
+
+db = client['fofoqueira']
+twitchChannel = db['twitch_channel']
 
 
 last_question_time = {}
@@ -31,24 +40,20 @@ streamer_map["ciciliacq"] = False
 streamer_map["panicobrx7"] = False
 streamer_map["mlsouza22"] = False
 
-sendChannelTwitch = {}
-
-sendChannelTwitch[268306210313207808] = "LIVES"
-sendChannelTwitch[767037529966641173] = "LIVES"
-
 # Remover Help padrão
 client.remove_command("help")
 
 
 @client.command()
-async def twitch_notification(ctx, channel):
+async def change_twitch_notification(ctx, channel):
     if ctx.author.id != ctx.guild.owner_id:
         await ctx.send("Você não tem permissão para usar esse comando.")
         return
     
     server_id = ctx.guild.id
 
-    sendChannelTwitch[server_id] = channel
+    twitchChannel.update_one({'servidorId': server_id}, {"$set": {'nomeCanal': channel}}, upsert=True)
+
     await ctx.send(f"Novo canal de notificação twitch, salvo!")
 
 
@@ -490,18 +495,19 @@ def removeCaractere(palavra):
 async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
         channelTwitch = "LIVES"
-        if guild.id in sendChannelTwitch:
-            channelTwitch = sendChannelTwitch[guild.id]
+        num_docs = twitchChannel.count_documents({'servidorId': guild.id})
+        if (num_docs > 0):
+            channelTwitch = twitchChannel.find({'servidorId': guild.id})
 
         if guild.id == 268306210313207808:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channelTwitch and streamer_name == "ciciliacq":
+                if removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"] and streamer_name == "ciciliacq":
                     await channel.send(f'@everyone\n{msg}')
-                elif removeCaractere(channel.name).upper() == channelTwitch:
+                elif removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"]:
                     await channel.send(msg)
         else:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channelTwitch:
+                if removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"]:
                     await channel.send(msg)
 
 async def get_stream_data(user):
