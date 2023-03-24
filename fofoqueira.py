@@ -11,16 +11,11 @@ from unidecode import unidecode
 
 import pymongo
 
-
-
 mongo_uri = config("URL_MONGODB")
-client = pymongo.MongoClient(mongo_uri)
+clientMongoDB = pymongo.MongoClient(mongo_uri)
 
-db = client['fofoqueira']
+db = clientMongoDB['fofoqueira']
 twitchChannel = db['twitch_channel']
-
-
-last_question_time = {}
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 
@@ -31,14 +26,6 @@ reminders = []
 current_status = True
 token_twitch = config("TOKEN_TWITCH")
 client_id_twitch = config("CLIENT_ID_TWITCH")
-
-updateDateToken = None
-tokenTwitch = None
-streamer_map = {}
-
-streamer_map["ciciliacq"] = False
-streamer_map["panicobrx7"] = False
-streamer_map["mlsouza22"] = False
 
 # Remover Help padrão
 client.remove_command("help")
@@ -96,8 +83,20 @@ async def vender(ctx, valor: float, pix: str, *, produto: str):
     await ctx.send(embed=embed)
 
 @client.command()
-async def twitch(ctx, valor: str):
-    streamer_map[valor] = False
+async def add_channel_twitch(ctx, valor: str):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Você não tem permissão para usar esse comando.")
+        return
+    
+    server_id = ctx.guild.id
+
+    twitchChannel.update_one({"servidorId": server_id}, {"$addToSet": {"canais": {
+      "login": {valor},
+      "status": False,
+      "mensagemEntrada": f"O(a) {valor} está online. Assista em https://www.twitch.tv/{valor}",
+      "mensagemSaida": f"O(a) {valor} está offline.",
+      "paraTodos": False
+    }}})
 
 
 @client.command()
@@ -464,50 +463,47 @@ async def check_epic_games():
 
 @tasks.loop(seconds=5)
 async def check_stream():
-    for chave, valor in streamer_map.items():
-        print(f"live: {chave} status: {valor}")
-        last_status = valor
-        stream_data = await get_stream_data(chave)
-        current_status = stream_data["is_live"]
-        streamer_name = stream_data["broadcaster_login"]
-        if current_status != last_status:
-            streamer_map[chave] = current_status
-            if current_status == True:
-                print(f"live: {chave} status: {current_status}")
-                if (streamer_name == "ciciliacq"):
-                    await sendMensagem(f'A {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}', streamer_name)
-                else:
-                    await sendMensagem(f'O(a) streamer {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}', streamer_name)
-            else:
-                if (streamer_name == "ciciliacq"):
-                    await sendMensagem(f'A {streamer_name} está offline.', streamer_name)
-                else:
-                    await sendMensagem(f'O(a) streamer {streamer_name} está offline.', streamer_name)
+    servers = twitchChannel.find()
+    for server in servers:
+        streamers_for_channel = server["canais"]
+        if streamers_for_channel is not None:
+            for streamer in streamers_for_channel:
+                streamer_name = streamer["login"]
+                streamer_status = streamer["status"]
+                streamer_data = await get_stream_data(streamer_name)
+                streamer_current_status = streamer_data["is_live"]
+                if streamer_status != streamer_current_status:
+                    twitchChannel.update_one({"servidorId": server["servidorId"], "canais.nome": streamer_name}, {"$set": {"canais.$.status": streamer_current_status}})
+                    mensagemEntrada = ""
+                    mensagemSaida = ""
+                    streamer_msg_for_all = streamer["paraTodos"]
+                    if streamer_msg_for_all == True:
+                        mensagemEntrada = f'@everyone\n'
+                        mensagemSaida = f'@everyone\n'
+                    mensagemEntrada = streamer["mensagemEntrada"]
+                    mensagemSaida = streamer["mensagemSaida"]
+                    if (streamer_current_status == True):
+                        await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
+                    else:
+                        await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
 
 
-def removeCaractere(palavra):
+async def removeCaractere(palavra):
     texto_sem_traco = re.sub(r'[-_]', '', palavra)
     texto_sem_emojis = remover_emojis(texto_sem_traco)
     texto_sem_especiais = re.sub(r'[^\w\s]', '', texto_sem_emojis)
     texto_sem_acento = unidecode(texto_sem_especiais)
     return texto_sem_acento
 
-async def sendMensagem(msg, streamer_name):
+async def enviarMensagemNotificationTwitch(msg, servidorId):
     for guild in client.guilds:
         channelTwitch = "LIVES"
         num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
         if (num_docs > 0):
             channelTwitch = twitchChannel.find({'servidorId': str(guild.id)})
-
-        if guild.id == 268306210313207808:
+        if guild.id == servidorId:
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"] and streamer_name == "ciciliacq":
-                    await channel.send(f'@everyone\n{msg}')
-                elif removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"]:
-                    await channel.send(msg)
-        else:
-            for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"]:
+                if removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"].upper():
                     await channel.send(msg)
 
 async def get_stream_data(user):
