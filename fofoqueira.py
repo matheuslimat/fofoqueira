@@ -52,7 +52,7 @@ async def change_twitch_notification(ctx, channel):
     
     server_id = ctx.guild.id
 
-    twitchChannel.update_one({'servidorId': server_id}, {"$set": {'nomeCanal': channel, 'servidorId': server_id}}, upsert=True)
+    twitchChannel.update_one({'servidorId': str(server_id)}, {"$set": {'nomeCanal': channel, 'servidorId': str(server_id)}}, upsert=True)
 
     await ctx.send(f"Novo canal de notificação twitch, salvo!")
 
@@ -495,9 +495,9 @@ def removeCaractere(palavra):
 async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
         channelTwitch = "LIVES"
-        num_docs = twitchChannel.count_documents({'servidorId': guild.id})
+        num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
         if (num_docs > 0):
-            channelTwitch = twitchChannel.find({'servidorId': guild.id})
+            channelTwitch = twitchChannel.find({'servidorId': str(guild.id)})
 
         if guild.id == 268306210313207808:
             for channel in guild.text_channels:
