@@ -503,12 +503,15 @@ async def sendMensagem(msg, streamer_name):
                     await channel.send(msg)
 
 async def get_stream_data(user):
-    headers = {
+    try:
+        headers = {
         'Client-ID': client_id_twitch,
         "Authorization" : f"Bearer {token_twitch}"
     }
-    response =  requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
-    data = json.loads(response.text)["data"]
+        response =  requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
+        data = json.loads(response.text)["data"]
+    except:
+        print("Ocorreu um erro na request da twitch!")
     for item in data:
         if item["broadcaster_login"] == user:
             return item
