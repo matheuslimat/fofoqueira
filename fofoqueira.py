@@ -52,7 +52,7 @@ async def change_twitch_notification(ctx, channel):
     
     server_id = ctx.guild.id
 
-    twitchChannel.update_one({'servidorId': server_id}, {"$set": {'nomeCanal': channel}}, upsert=True)
+    twitchChannel.update_one({'servidorId': server_id}, {"$set": {'nomeCanal': channel, 'servidorId': server_id}}, upsert=True)
 
     await ctx.send(f"Novo canal de notificação twitch, salvo!")
 
