@@ -4,3 +4,4 @@ python-decouple
 requests
 openai
 unidecode
+pymongo
