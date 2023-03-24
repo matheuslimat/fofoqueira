@@ -460,6 +460,7 @@ async def check_epic_games():
 @tasks.loop(seconds=5)
 async def check_stream():
     for chave, valor in streamer_map.items():
+        print(f"live: {chave} status: {valor}")
         last_status = valor
         stream_data = await get_stream_data(chave)
         current_status = stream_data["is_live"]
@@ -467,6 +468,7 @@ async def check_stream():
         if current_status != last_status:
             streamer_map[chave] = current_status
             if current_status == True:
+                print(f"live: {chave} status: {current_status}")
                 if (streamer_name == "ciciliacq"):
                     await sendMensagem(f'A {streamer_name} está online. Assista em https://www.twitch.tv/{streamer_name}', streamer_name)
                 else:
@@ -488,8 +490,8 @@ def removeCaractere(palavra):
 async def sendMensagem(msg, streamer_name):
     for guild in client.guilds:
         channel = "LIVES"
-        if guild.id in sendChannelTwitch:
-            channel = sendChannelTwitch[guild.id]
+        # if guild.id in sendChannelTwitch:
+        #     channel = sendChannelTwitch[guild.id]
 
         if guild.id == 268306210313207808:
             for channel in guild.text_channels:
