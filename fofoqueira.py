@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from discord.ext import tasks
 from unidecode import unidecode
 import pymongo
+import time
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 
@@ -79,11 +80,14 @@ async def vender(ctx, valor: float, pix: str, *, produto: str):
         "produto": produto,
         "valor": valor,
         "pix": pix,
-        "id": len(lista_de_vendas) + 1,
+        "id": current_milli_time()
     }
 
     bazar.update_one({"servidorId": str(ctx.guild.id)}, {"$addToSet": {"listaDeVendas": venda}})
     await ctx.send(embed=embed)
+
+def current_milli_time():
+    return round(time.time() * 1000)
 
 @client.command()
 async def add_channel_twitch(ctx, valor: str):
