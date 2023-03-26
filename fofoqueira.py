@@ -484,21 +484,22 @@ async def check_stream():
                 streamer_name = streamer["login"]
                 streamer_status = streamer["status"]
                 streamer_data = await get_stream_data(streamer_name)
-                streamer_current_status = streamer_data["is_live"]
-                if streamer_status != streamer_current_status:
-                    twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
-                    mensagemEntrada = ""
-                    mensagemSaida = ""
-                    streamer_msg_for_all = streamer["paraTodos"]
-                    if streamer_msg_for_all == True:
-                        mensagemEntrada = f'@everyone\n'
-                        mensagemSaida = f'@everyone\n'
-                    mensagemEntrada = streamer["mensagemEntrada"]
-                    mensagemSaida = streamer["mensagemSaida"]
-                    if (streamer_current_status == True):
-                        await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
-                    else:
-                        await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
+                if streamer_data is not None:
+                    streamer_current_status = streamer_data["is_live"]
+                    if streamer_status != streamer_current_status:
+                        twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
+                        mensagemEntrada = ""
+                        mensagemSaida = ""
+                        streamer_msg_for_all = streamer["paraTodos"]
+                        if streamer_msg_for_all == True:
+                            mensagemEntrada = f'@everyone\n'
+                            mensagemSaida = f'@everyone\n'
+                        mensagemEntrada = streamer["mensagemEntrada"]
+                        mensagemSaida = streamer["mensagemSaida"]
+                        if (streamer_current_status == True):
+                            await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
+                        else:
+                            await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
 
 
 def removeCaractere(palavra):
@@ -528,12 +529,14 @@ async def get_stream_data(user):
     }
         response =  requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
         data = json.loads(response.text)["data"]
+        for item in data:
+            if item["broadcaster_login"] == user:
+                return item
     except:
         print("Ocorreu um erro na request da twitch!")
-    for item in data:
-        if item["broadcaster_login"] == user:
-            return item
+    
     return None
+    
     
 
 
