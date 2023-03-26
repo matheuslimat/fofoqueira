@@ -486,7 +486,7 @@ async def check_stream():
                 streamer_data = await get_stream_data(streamer_name)
                 streamer_current_status = streamer_data["is_live"]
                 if streamer_status != streamer_current_status:
-                    twitchChannel.update_one({"servidorId": server["servidorId"], "canais.nome": streamer_name}, {"$set": {"canais.$.status": streamer_current_status}})
+                    twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
                     mensagemEntrada = ""
                     mensagemSaida = ""
                     streamer_msg_for_all = streamer["paraTodos"]
