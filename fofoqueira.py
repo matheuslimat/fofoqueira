@@ -515,7 +515,7 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
             num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
             if (num_docs > 0):
                 channelTwitch = twitchChannel.find_one({'servidorId': str(guild.id)})["nomeCanal"]
-            
+            print(channelTwitch)
             for channel in guild.text_channels:
                 if removeCaractere(channel.name).upper() == str(channelTwitch).upper():
                     await channel.send(msg)
