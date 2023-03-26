@@ -501,7 +501,7 @@ async def check_stream():
                         await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
 
 
-async def removeCaractere(palavra):
+def removeCaractere(palavra):
     texto_sem_traco = re.sub(r'[-_]', '', palavra)
     texto_sem_emojis = remover_emojis(texto_sem_traco)
     texto_sem_especiais = re.sub(r'[^\w\s]', '', texto_sem_emojis)
@@ -510,13 +510,14 @@ async def removeCaractere(palavra):
 
 async def enviarMensagemNotificationTwitch(msg, servidorId):
     for guild in client.guilds:
-        channelTwitch = "LIVES"
-        num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
-        if (num_docs > 0):
-            channelTwitch = twitchChannel.find({'servidorId': str(guild.id)})
-        if guild.id == servidorId:
+        if str(guild.id) == str(servidorId):
+            channelTwitch = "LIVES"
+            num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
+            if (num_docs > 0):
+                channelTwitch = twitchChannel.find_one({'servidorId': str(guild.id)})["nomeCanal"]
+            
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == channelTwitch["nomeCanal"].upper():
+                if removeCaractere(channel.name).upper() == str(channelTwitch).upper():
                     await channel.send(msg)
 
 async def get_stream_data(user):
