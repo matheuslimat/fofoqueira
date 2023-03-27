@@ -494,8 +494,8 @@ async def check_stream():
                         if streamer_msg_for_all == True:
                             mensagemEntrada = f'@everyone\n'
                             mensagemSaida = f'@everyone\n'
-                        mensagemEntrada = streamer["mensagemEntrada"]
-                        mensagemSaida = streamer["mensagemSaida"]
+                        mensagemEntrada = mensagemEntrada + streamer["mensagemEntrada"]
+                        mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
                         if (streamer_current_status == True):
                             await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
                         else:
