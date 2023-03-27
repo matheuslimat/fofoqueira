@@ -507,6 +507,7 @@ def removeCaractere(palavra):
     texto_sem_emojis = remover_emojis(texto_sem_traco)
     texto_sem_especiais = re.sub(r'[^\w\s]', '', texto_sem_emojis)
     texto_sem_acento = unidecode(texto_sem_especiais)
+    texto_sem_acento = texto_sem_acento.replace("ç", "c").replace("Ç", "c")
     return texto_sem_acento
 
 async def enviarMensagemNotificationTwitch(msg, servidorId):
@@ -518,7 +519,7 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
                 channelTwitch = twitchChannel.find_one({'servidorId': str(guild.id)})["nomeCanal"]
             print(channelTwitch)
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == str(channelTwitch).upper():
+                if removeCaractere(channel.name).upper() == removeCaractere(str(channelTwitch)).upper():
                     await channel.send(msg)
 
 async def get_stream_data(user):
