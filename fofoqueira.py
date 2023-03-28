@@ -10,6 +10,8 @@ from discord.ext import tasks
 from unidecode import unidecode
 import pymongo
 import time
+import aiohttp
+import asyncio
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 
@@ -104,6 +106,8 @@ async def add_channel_twitch(ctx, valor: str):
       "mensagemSaida": f"O(a) {valor} está offline.",
       "paraTodos": False
     }}})
+
+    await ctx.send(f"Novo streamer, salvo para notificação de lives!")
 
 
 
@@ -474,34 +478,48 @@ async def check_epic_games():
     else:
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
 
-
 @tasks.loop(seconds=5)
 async def check_stream():
-    servers = twitchChannel.find()
-    for server in servers:
-        streamers_for_channel = server["canais"]
-        if streamers_for_channel is not None:
-            for streamer in streamers_for_channel:
-                streamer_name = streamer["login"]
-                streamer_status = streamer["status"]
-                streamer_data = await get_stream_data(streamer_name)
-                if streamer_data is not None:
-                    streamer_current_status = streamer_data["is_live"]
-                    if streamer_status != streamer_current_status:
-                        twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
-                        mensagemEntrada = ""
-                        mensagemSaida = ""
-                        streamer_msg_for_all = streamer["paraTodos"]
-                        if streamer_msg_for_all == True:
-                            mensagemEntrada = f'@everyone\n'
-                            mensagemSaida = f'@everyone\n'
-                        mensagemEntrada = mensagemEntrada + streamer["mensagemEntrada"]
-                        mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
-                        if (streamer_current_status == True):
-                            await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
-                        else:
-                            await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
+    async with aiohttp.ClientSession(headers={"Client-ID": client_id_twitch, "Authorization": f"Bearer {token_twitch}"}) as session:
+        servers = twitchChannel.find()
+        for server in servers:
+            streamers_for_channel = server["canais"]
+            if streamers_for_channel is not None:
+                for streamer in streamers_for_channel:
+                    streamer_name = streamer["login"]
+                    streamer_status = streamer["status"]
+                    streamer_data = await get_stream_data(session, streamer_name)
+                    if streamer_data is not None:
+                        streamer_current_status = streamer_data["is_live"]
+                        if streamer_status != streamer_current_status:
+                            twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
+                            mensagemEntrada = ""
+                            mensagemSaida = ""
+                            streamer_msg_for_all = streamer["paraTodos"]
+                            if streamer_msg_for_all == True:
+                                mensagemEntrada = f'@everyone\n'
+                                mensagemSaida = f'@everyone\n'
+                            mensagemEntrada = mensagemEntrada + streamer["mensagemEntrada"]
+                            mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
+                            if (streamer_current_status == True):
+                                await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
+                            else:
+                                await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
 
+async def get_stream_data(session, user):
+    url = f"https://api.twitch.tv/helix/search/channels?query={user}"
+
+    try:
+        async with session.get(url) as response:
+            response.raise_for_status()
+            data = await response.json()
+            for item in data["data"]:
+                if item["broadcaster_login"] == user:
+                    return item
+    except aiohttp.ClientError as e:
+        print(f"Ocorreu um erro na request da Twitch: {e}")
+    
+    return None
 
 def removeCaractere(palavra):
     texto_sem_traco = re.sub(r'[-_]', '', palavra)
@@ -522,24 +540,6 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
             for channel in guild.text_channels:
                 if removeCaractere(channel.name).upper() == removeCaractere(str(channelTwitch)).upper():
                     await channel.send(msg)
-
-async def get_stream_data(user):
-    try:
-        headers = {
-        'Client-ID': client_id_twitch,
-        "Authorization" : f"Bearer {token_twitch}"
-    }
-        response =  requests.get(f'https://api.twitch.tv/helix/search/channels?query={user}', headers=headers)
-        data = json.loads(response.text)["data"]
-        for item in data:
-            if item["broadcaster_login"] == user:
-                return item
-    except:
-        print("Ocorreu um erro na request da twitch!")
-    
-    return None
-    
-    
 
 
 TOKEN = config("TOKEN")
