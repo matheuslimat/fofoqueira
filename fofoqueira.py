@@ -99,7 +99,7 @@ async def add_channel_twitch(ctx, valor: str):
     
     server_id = ctx.guild.id
 
-    twitchChannel.update_one({"servidorId": server_id}, {"$addToSet": {"canais": {
+    twitchChannel.update_one({"servidorId": str(server_id)}, {"$addToSet": {"canais": {
       "login": valor,  # Corrigido aqui
       "status": False,
       "mensagemEntrada": f"O(a) {valor} está online. Assista em https://www.twitch.tv/{valor}",
