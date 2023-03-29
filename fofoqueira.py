@@ -12,6 +12,7 @@ import pymongo
 import time
 import aiohttp
 import asyncio
+import os
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 
@@ -35,6 +36,8 @@ current_status = True
 # Remover Help padrão
 client.remove_command("help")
 
+def check_machine_enviroment():
+    return "DYNO" not in os.environ
 
 @client.command()
 async def change_twitch_notification(ctx, channel):
@@ -477,7 +480,7 @@ async def check_epic_games():
                 await channel.send(message)
     else:
         await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
-
+# ----------------------------------------------------------------------------------------------------------------------------------------#
 @tasks.loop(seconds=5)
 async def check_stream():
     async with aiohttp.ClientSession(headers={"Client-ID": client_id_twitch, "Authorization": f"Bearer {token_twitch}"}) as session:
@@ -540,6 +543,46 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
             for channel in guild.text_channels:
                 if removeCaractere(channel.name).upper() == removeCaractere(str(channelTwitch)).upper():
                     await channel.send(msg)
+
+# < --------------------------------- SALA COMPARTILHADA ----------------------------------->
+
+shared_channel_name = "sala_compartilhada"
+
+async def get_shared_channel(guild):
+    for channel in guild.text_channels:
+        if channel.name == shared_channel_name:
+            return channel
+    return None
+
+async def create_shared_channel(guild):
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+    }
+    return await guild.create_text_channel(shared_channel_name, overwrites=overwrites)
+
+@client.command(name="sala_compartilhada")
+async def register_shared_channel(ctx):
+    shared_channel = await get_shared_channel(ctx.guild)
+    if shared_channel is None:
+        await create_shared_channel(ctx.guild)
+        await ctx.send("Canal compartilhado 'sala_compartilhada' criado com sucesso!")
+    else:
+        await ctx.send("O canal 'sala_compartilhada' já está cadastrado neste servidor.")
+
+@client.event
+async def on_message(message):
+    if message.author == client.user or message.content.startswith(client.command_prefix):
+        await client.process_commands(message)
+        return
+
+    shared_channel = await get_shared_channel(message.guild)
+    if message.channel == shared_channel:
+        msg_content = f"**{message.author} ({message.guild.name}):** {message.content}"
+        for guild in client.guilds:
+            if guild != message.guild:
+                other_shared_channel = await get_shared_channel(guild)
+                if other_shared_channel is not None:
+                    await other_shared_channel.send(msg_content)
 
 
 TOKEN = config("TOKEN")
