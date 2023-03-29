@@ -572,7 +572,7 @@ async def register_shared_channel(ctx):
 
 @client.event
 async def on_message(message):
-    
+
     if message.author.bot:
         return
     
@@ -596,13 +596,22 @@ async def on_message(message):
         await client.process_commands(message)
 
 @client.command()
-async def clean(ctx):
-    shared_channel = await get_shared_channel(ctx.guild)
+async def clean(ctx, channel_name: str):
+    if ctx.author.id != ctx.guild.owner_id:
+        await ctx.send("Apenas o dono do servidor pode usar este comando.")
+        return
+
+    shared_channel = None
+    for channel in ctx.guild.text_channels:
+        if channel.name == channel_name:
+            shared_channel = channel
+            break
+
     if shared_channel is not None:
         await shared_channel.purge()
-        await ctx.send("**A sala compartilhada foi limpa!**")
+        await ctx.send(f"O canal '{channel_name}' foi limpo!")
     else:
-        await ctx.send("**A sala compartilhada não existe!**")
+        await ctx.send(f"O canal '{channel_name}' não foi encontrado!")
 
 TOKEN = config("TOKEN")
 client.run(TOKEN)
