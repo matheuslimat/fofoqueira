@@ -598,5 +598,14 @@ async def on_message(message):
     elif message.content.startswith(client.command_prefix):
         await client.process_commands(message)
 
+@client.command()
+async def clean(ctx):
+    shared_channel = await get_shared_channel(ctx.guild)
+    if shared_channel is not None:
+        await shared_channel.purge()
+        await ctx.send("**A sala compartilhada foi limpa!**")
+    else:
+        await ctx.send("**A sala compartilhada não existe!**")
+
 TOKEN = config("TOKEN")
 client.run(TOKEN)
