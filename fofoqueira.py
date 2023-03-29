@@ -32,6 +32,9 @@ voice_join_times = {}
 reminders = []
 current_status = True
 
+# < ------ sala compartilhada ------ >
+shared_channel_name = "sala_compartilhada"
+# ---------------- #
 
 # Remover Help padrão
 client.remove_command("help")
@@ -546,7 +549,12 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
 
 # < --------------------------------- SALA COMPARTILHADA ----------------------------------->
 
-shared_channel_name = "sala_compartilhada"
+def random_hex_color():
+    rc = randomcolor.RandomColor()
+    hex_color = rc.generate()[0]
+    while hex_color in user_colors.values():
+        hex_color = rc.generate()[0]
+    return hex_color
 
 async def get_shared_channel(guild):
     for channel in guild.text_channels:
@@ -571,19 +579,24 @@ async def register_shared_channel(ctx):
 
 @client.event
 async def on_message(message):
-    if message.author == client.user or message.content.startswith(client.command_prefix):
+    if message.author == client.user:
         await client.process_commands(message)
         return
 
     shared_channel = await get_shared_channel(message.guild)
     if message.channel == shared_channel:
-        msg_content = f"**{message.author} ({message.guild.name}):** {message.content}"
+        if message.content.startswith("f!"):
+            await message.channel.send(f"{message.author.mention}, comandos não são permitidos neste canal.")
+            return
+
+        msg_content = f"**{message.author} (de {message.guild.name}):** {message.content}"
         for guild in client.guilds:
             if guild != message.guild:
                 other_shared_channel = await get_shared_channel(guild)
                 if other_shared_channel is not None:
                     await other_shared_channel.send(msg_content)
-
+    elif message.content.startswith(client.command_prefix):
+        await client.process_commands(message)
 
 TOKEN = config("TOKEN")
 client.run(TOKEN)
