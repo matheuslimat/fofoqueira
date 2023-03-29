@@ -549,13 +549,6 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
 
 # < --------------------------------- SALA COMPARTILHADA ----------------------------------->
 
-def random_hex_color():
-    rc = randomcolor.RandomColor()
-    hex_color = rc.generate()[0]
-    while hex_color in user_colors.values():
-        hex_color = rc.generate()[0]
-    return hex_color
-
 async def get_shared_channel(guild):
     for channel in guild.text_channels:
         if channel.name == shared_channel_name:
@@ -579,6 +572,10 @@ async def register_shared_channel(ctx):
 
 @client.event
 async def on_message(message):
+    
+    if message.author.bot:
+        return
+    
     if message.author == client.user:
         await client.process_commands(message)
         return
