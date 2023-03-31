@@ -252,7 +252,11 @@ async def lol(ctx):
 
 @tasks.loop(minutes=300.0)
 async def enviar_mensagem_bazar():
-    lista_de_vendas = bazar.find()
+    vendas_cursor = bazar.find()
+
+    lista_de_vendas = []
+    for venda in vendas_cursor:
+        lista_de_vendas.extend(venda["listaDeVendas"])
 
     if not lista_de_vendas:
         response = random.choice(
@@ -269,12 +273,11 @@ async def enviar_mensagem_bazar():
         )
         await channel.send(response)
     else:
-        for venda in lista_de_vendas["listaDeVendas"]:
-        
+        for venda in lista_de_vendas:
             channel = discord.utils.get(
                 client.get_all_channels(), name="bazar-do-leigo"
             )  # Substitua 'channel-name' pelo nome do canal
-    
+
             embed = discord.Embed(
                 title="Items a Venda",
                 url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
@@ -299,6 +302,7 @@ async def enviar_mensagem_bazar():
             embed.add_field(name="Produto:", value=venda["produto"], inline=True)
             embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
             await channel.send(embed=embed)
+
         
 
 
