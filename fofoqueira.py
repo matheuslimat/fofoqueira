@@ -256,37 +256,38 @@ async def enviar_mensagem_bazar():
     for vendas in bazarDataBase:
         lista_de_vendas = vendas["listaDeVendas"]
 
-        channel = discord.utils.get(
-            client.get_all_channels(), name="bazar-do-leigo"
-        )  # Substitua 'channel-name' pelo nome do canal
-        response = ""
-        for venda in lista_de_vendas:
-            embed = discord.Embed(
-                title="Items a Venda",
-                url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
-                description=random.choice(
-                    [
-                        "Você não vai querer perder essa oportunidade! ",
-                        "Corre lá! Mas lembre-se que você não é parça do Neymar...",
-                        "Não deixe essa oportunidade passar! ",
-                        "Não fique de fora! Aproveite pra dar o golpe! ",
-                        "Não perca essa chance! Vai ser como roubar doce de criança. ",
-                        "Não perca essa oportunidade única de fazer merda! ",
-                        "The Bazar da fofoqueira venda e compre já never ends.",
-                    ]
-                ),
-                color=0xFF0000,
-            )
-            embed.set_author(
-                name="Leigo: " + venda["author"],
-                icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
-            )
-            embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
-            embed.add_field(name="Produto:", value=venda["produto"], inline=True)
-            embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
-            await channel.send(embed=embed)
-
         if not lista_de_vendas:
+
+            channel = discord.utils.get(
+                client.get_all_channels(), name="bazar-do-leigo"
+            )  # Substitua 'channel-name' pelo nome do canal
+            response = ""
+            for venda in lista_de_vendas:
+                embed = discord.Embed(
+                    title="Items a Venda",
+                    url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
+                    description=random.choice(
+                        [
+                            "Você não vai querer perder essa oportunidade! ",
+                            "Corre lá! Mas lembre-se que você não é parça do Neymar...",
+                            "Não deixe essa oportunidade passar! ",
+                            "Não fique de fora! Aproveite pra dar o golpe! ",
+                            "Não perca essa chance! Vai ser como roubar doce de criança. ",
+                            "Não perca essa oportunidade única de fazer merda! ",
+                            "The Bazar da fofoqueira venda e compre já never ends.",
+                        ]
+                    ),
+                    color=0xFF0000,
+                )
+                embed.set_author(
+                    name="Leigo: " + venda["author"],
+                    icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
+                )
+                embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+                embed.add_field(name="Produto:", value=venda["produto"], inline=True)
+                embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
+                await channel.send(embed=embed)
+        else:
             response = random.choice(
                 [
                     "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
