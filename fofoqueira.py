@@ -256,7 +256,7 @@ async def enviar_mensagem_bazar():
     for vendas in bazarDataBase:
         lista_de_vendas = vendas["listaDeVendas"]
 
-        if not lista_de_vendas:
+        if lista_de_vendas:
 
             channel = discord.utils.get(
                 client.get_all_channels(), name="bazar-do-leigo"
