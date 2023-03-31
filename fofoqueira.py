@@ -283,15 +283,32 @@ async def lol(ctx):
 
 @tasks.loop(minutes=300.0)
 async def enviar_mensagem_bazar():
-    bazarDataBase = bazar.find()
-    for vendas in bazarDataBase:
-        lista_de_vendas = vendas["listaDeVendas"]
+    vendas_cursor = bazar.find()
 
-        channel = discord.utils.get(
-            client.get_all_channels(), name="bazar-do-leigo"
-        )  # Substitua 'channel-name' pelo nome do canal
-        response = ""
+    lista_de_vendas = []
+    for venda in vendas_cursor:
+        lista_de_vendas.extend(venda["listaDeVendas"])
+
+    if not lista_de_vendas:
+        response = random.choice(
+            [
+                "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
+                "**Não tem nada a venda? Como pode...**",
+                "**Eu só queria comprar uma merdinha...**",
+                "**Anuncia ae, esse bazar ta com teia de aranha já!**",
+                "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
+                "**Anuncia bb que eu to carente já**",
+                "**Anuncie aqui, bota tudo, lá ele!!!**",
+                "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
+            ]
+        )
+        await channel.send(response)
+    else:
         for venda in lista_de_vendas:
+            channel = discord.utils.get(
+                client.get_all_channels(), name="bazar-do-leigo"
+            )  # Substitua 'channel-name' pelo nome do canal
+
             embed = discord.Embed(
                 title="Items a Venda",
                 url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
@@ -317,20 +334,8 @@ async def enviar_mensagem_bazar():
             embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
             await channel.send(embed=embed)
 
-        if len(lista_de_vendas) == 0:
-            response = random.choice(
-                [
-                    "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
-                    "**Não tem nada a venda? Como pode...**",
-                    "**Eu só queria comprar uma merdinha...**",
-                    "**Anuncia ae, esse bazar ta com teia de aranha já!**",
-                    "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
-                    "**Anuncia bb que eu to carente já**",
-                    "**Anuncie aqui, bota tudo, lá ele!!!**",
-                    "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
-                ]
-            )
-            await channel.send(response)
+        
+
 
 @client.event
 async def on_ready():
