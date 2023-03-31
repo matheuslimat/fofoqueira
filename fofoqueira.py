@@ -286,7 +286,7 @@ async def enviar_mensagem_bazar():
             embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
             await channel.send(embed=embed)
 
-        if len(lista_de_vendas) == 0:
+        if not lista_de_vendas:
             response = random.choice(
                 [
                     "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
