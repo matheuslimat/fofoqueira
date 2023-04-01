@@ -249,10 +249,10 @@ async def show_commands(message):
 #                 await channel.send(embed=embed)
 
 
-@client.event
-async def on_ready():
-    enviar_mensagem_bazar.start()
-    check_stream.start()
+# @client.event
+# async def on_ready():
+#     enviar_mensagem_bazar.start()
+#     check_stream.start()
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
