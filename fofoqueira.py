@@ -39,8 +39,8 @@ shared_channel_name = "sala_compartilhada"
 # Remover Help padrão
 client.remove_command("help")
 
-def check_machine_enviroment():
-    return "DYNO" not in os.environ
+def is_running_on_heroku():
+    return 'DYNO' in os.environ
 
 @client.command()
 async def change_twitch_notification(ctx, channel):
@@ -187,123 +187,67 @@ async def show_commands(message):
     await message.channel.send(f'Comandos disponíveis: {", ".join(command_list)}')
 
 
-# < --------------------------------- LOL ------------------------------------------------------>
-@client.command()
-async def lol(ctx):
-    url = "https://league-of-legends-galore.p.rapidapi.com/api/getPlayerRank"
-
-    nickName = ctx.message.content[5:]
-    querystring = {"name": nickName, "region": "br"}
-
-    headers = {
-        "X-RapidAPI-Key": "0104c4d9f6msh2256b7bef11422ep150493jsn3eb1ae970e48",
-        "X-RapidAPI-Host": "league-of-legends-galore.p.rapidapi.com",
-    }
-
-    response = requests.request("GET", url, headers=headers, params=querystring)
-    user = response.json()[0]
-
-    username = user["username"]
-    rank = user["rank"]
-    emoji = ""
-    points = user["lp"]
-    winLossRation = user["winLossRatio"]
-
-    if "Gold" in rank:
-        emoji = "<:7052lolrank4gold:1062550558927491142>"
-    elif "Silver" in rank:
-        emoji = "<:3360lolrank3silver:1062550562027098142>"
-    elif "Bronze" in rank:
-        emoji = "<:3360lolrank2bronze:1062550555433644073>"
-    elif "Iron" in rank:
-        emoji = "<:4133lolrank1iron:1062550564975677492>"
-    elif "Platinum" in rank:
-        emoji = "<:4183lolrank5platinum:1062550553089019975>"
-    elif "Diamond" in rank:
-        emoji = "<:5693lolrank6diamond:1062550551499386940>"
-    elif "GrandMaster" in rank:
-        emoji = "<:8981lolrank8grandmaster:1062550543479873597>"
-    elif "Master" in rank:
-        emoji = "<:9431lolrank7master:1062550548768895117>"
-    elif "Challenger" in rank:
-        emoji = "<:8641lolrank9challenger:1062550547049218098>"
-
-    embed = discord.Embed(
-        title="RANK DO LOL",
-        description=random.choice(
-            [
-                "Esse leigo pensa que sabe jogar essa merda...",
-                "Isso é um noob triste.......................",
-                "Só joga de luquixi.........................",
-            ]
-        ),
-        color=0x00D5FF,
-    )
-    embed.set_thumbnail(
-        url="https://static.dicionariodesimbolos.com.br/upload/2a/fe/significado-da-bandeira-lgbt-e-sua-historia-8_xl.png"
-    )
-    embed.add_field(name="User:", value=username, inline=False)
-    embed.add_field(name="Vitorias/Derrotas:", value=winLossRation, inline=False)
-    embed.add_field(name="Pontos:", value=points, inline=False)
-    embed.add_field(name="Rank:", value=emoji, inline=False)
-
-    await ctx.message.channel.send(embed=embed)
-    await ctx.send(file=discord.File("assets/lol_banner.png"))
-
 @tasks.loop(minutes=300.0)
 async def enviar_mensagem_bazar():
+    running_on_heroku = is_running_on_heroku()
+
     vendas_cursor = bazar.find()
 
     lista_de_vendas = []
     for venda in vendas_cursor:
         lista_de_vendas.extend(venda["listaDeVendas"])
 
-    if not lista_de_vendas:
-        response = random.choice(
-            [
-                "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
-                "**Não tem nada a venda? Como pode...**",
-                "**Eu só queria comprar uma merdinha...**",
-                "**Anuncia ae, esse bazar ta com teia de aranha já!**",
-                "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
-                "**Anuncia bb que eu to carente já**",
-                "**Anuncie aqui, bota tudo, lá ele!!!**",
-                "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
-            ]
-        )
-        await channel.send(response)
+    target_servers = []
+    if not running_on_heroku:
+        target_servers.append("767037529966641173")
     else:
-        for venda in lista_de_vendas:
-            channel = discord.utils.get(
-                client.get_all_channels(), name="bazar-do-leigo"
-            )  # Substitua 'channel-name' pelo nome do canal
+        target_servers = [guild.id for guild in client.guilds]
 
-            embed = discord.Embed(
-                title="Items a Venda",
-                url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
-                description=random.choice(
-                    [
-                        "Você não vai querer perder essa oportunidade! ",
-                        "Corre lá! Mas lembre-se que você não é parça do Neymar...",
-                        "Não deixe essa oportunidade passar! ",
-                        "Não fique de fora! Aproveite pra dar o golpe! ",
-                        "Não perca essa chance! Vai ser como roubar doce de criança. ",
-                        "Não perca essa oportunidade única de fazer merda! ",
-                        "The Bazar da fofoqueira venda e compre já never ends.",
-                    ]
-                ),
-                color=0xFF0000,
+    for server_id in target_servers:
+        if not lista_de_vendas:
+            response = random.choice(
+                [
+                    "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
+                    "**Não tem nada a venda? Como pode...**",
+                    "**Eu só queria comprar uma merdinha...**",
+                    "**Anuncia ae, esse bazar ta com teia de aranha já!**",
+                    "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
+                    "**Anuncia bb que eu to carente já**",
+                    "**Anuncie aqui, bota tudo, lá ele!!!**",
+                    "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
+                ]
             )
-            embed.set_author(
-                name="Leigo: " + venda["author"],
-                icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
-            )
-            embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
-            embed.add_field(name="Produto:", value=venda["produto"], inline=True)
-            embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
-            await channel.send(embed=embed)
+            await channel.send(response)
+        else:
+            for venda in lista_de_vendas:
+                channel = discord.utils.get(
+                    client.get_all_channels(), name="bazar-do-leigo"
+                )  # Substitua 'channel-name' pelo nome do canal
 
-        
+                embed = discord.Embed(
+                    title="Items a Venda",
+                    url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
+                    description=random.choice(
+                        [
+                            "Você não vai querer perder essa oportunidade! ",
+                            "Corre lá! Mas lembre-se que você não é parça do Neymar...",
+                            "Não deixe essa oportunidade passar! ",
+                            "Não fique de fora! Aproveite pra dar o golpe! ",
+                            "Não perca essa chance! Vai ser como roubar doce de criança. ",
+                            "Não perca essa oportunidade única de fazer merda! ",
+                            "The Bazar da fofoqueira venda e compre já never ends.",
+                        ]
+                    ),
+                    color=0xFF0000,
+                )
+                embed.set_author(
+                    name="Leigo: " + venda["author"],
+                    icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
+                )
+                embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+                embed.add_field(name="Produto:", value=venda["produto"], inline=True)
+                embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
+                await channel.send(embed=embed)
 
 
 @client.event
@@ -463,37 +407,14 @@ async def exibir_imagem(message):
         await message.channel.send(f"O jogo {nome_jogo} não foi encontrado")
 
 
-# < ----------------------- Gratis EPIC --------------------->
-async def check_epic_games():
-    channel = discord.utils.get(
-        client.get_all_channels(), name="jogo-gratis-ou-da-epic"
-    )  # Substitua 'channel-name' pelo nome do canal
-    url = "https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=pt-BR&country=BR&allowCountries=BR"
-
-    response = requests.get(url)
-    data = json.loads(response.text)
-
-    free_games = data["data"]["Catalog"]["searchStore"]["elements"]
-
-    if free_games:
-        for game in free_games:
-            if(game["status"] == "ACTIVE"):
-                title = game["title"]
-                original_price = game["price"]["totalPrice"]["fmtPrice"]["originalPrice"]
-                discount_price = game["price"]["totalPrice"]["fmtPrice"]["discountPrice"]
-                url_game = game["keyImages"][0]["url"]
-
-
-                message = f"**Jogo baratos ou gratuitos disponível: ** {title} (Preço original: {original_price} | Preço com desconto: {discount_price}) - {url_game}"
-                await channel.send(message)
-    else:
-        await channel.send("**Não há jogos baratos ou gratuitos disponíveis na Epic Games Store no momento.**")
-# ----------------------------------------------------------------------------------------------------------------------------------------#
 @tasks.loop(seconds=5)
 async def check_stream():
     async with aiohttp.ClientSession(headers={"Client-ID": client_id_twitch, "Authorization": f"Bearer {token_twitch}"}) as session:
         servers = twitchChannel.find()
         for server in servers:
+            if not is_running_on_heroku() and server["servidorId"] != "767037529966641173":
+                continue
+
             streamers_for_channel = server["canais"]
             if streamers_for_channel is not None:
                 for streamer in streamers_for_channel:
@@ -516,6 +437,7 @@ async def check_stream():
                                 await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
                             else:
                                 await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
+
 
 async def get_stream_data(session, user):
     url = f"https://api.twitch.tv/helix/search/channels?query={user}"
