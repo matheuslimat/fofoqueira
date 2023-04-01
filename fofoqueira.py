@@ -48,6 +48,7 @@ def is_running_on_heroku():
     print(f"Running on Heroku: {result}")
     return result
 
+@client.event
 async def on_ready():
     # enviar_mensagem_bazar.start()
     check_stream.start()
