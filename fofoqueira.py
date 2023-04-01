@@ -34,7 +34,11 @@ current_status = True
 
 # < ------ sala compartilhada ------ >
 shared_channel_name = "sala_compartilhada"
-# ---------------- #
+# -----------------------------------
+
+# < ------ sala compartilhada ------ >
+arkServer = db['ark']
+# -----------------------------------
 
 # Remover Help padrão
 client.remove_command("help")
@@ -43,6 +47,11 @@ def is_running_on_heroku():
     result = 'DYNO' in os.environ
     print(f"Running on Heroku: {result}")
     return result
+
+async def on_ready():
+    # enviar_mensagem_bazar.start()
+    check_stream.start()
+    check_servidor_ark.start()
 
 @client.command()
 async def change_twitch_notification(ctx, channel):
@@ -55,7 +64,6 @@ async def change_twitch_notification(ctx, channel):
     twitchChannel.update_one({'servidorId': str(server_id)}, {"$set": {'nomeCanal': channel, 'servidorId': str(server_id)}}, upsert=True)
 
     await ctx.send(f"Novo canal de notificação twitch, salvo!")
-
 
 
 @client.command()
@@ -116,7 +124,6 @@ async def add_channel_twitch(ctx, valor: str):
     }}})
 
     await ctx.send(f"Novo streamer, salvo para notificação de lives!")
-
 
 
 @client.command()
@@ -327,7 +334,88 @@ async def lodout(ctx, author: str):
     else:
         await ctx.send(f"**{author} Não cadastrou lodout! **")
 
+# <------------------------------------ ARK --------------------------------->
 
+@client.command()
+async def add_channel_server_ark(ctx, valor: str):
+    # if ctx.author.id != ctx.guild.owner_id:
+    #     await ctx.send("Você não tem permissão para usar esse comando.")
+    #     return
+
+    server_id = ctx.guild.id
+
+    arkServer.update_one({"serverId": str(server_id)}, {"$addToSet": {"serversArk": {
+      "ip": valor,
+      "status": False,
+      "upMessage": "O servidor está online",
+      "downMessage": "O servidor está offline",
+      "name": "",
+      "everyone": False
+    }}})
+
+    await ctx.send(f"Novo servidor de ark, adicionado para notificação de online/offline!")
+
+async def enviarMensagemNotificationServer(msg, servidorId):
+    for guild in client.guilds:
+        if str(guild.id) == str(servidorId):
+            channelArk = "servidores"
+            num_docs = arkServer.count_documents({'serverId': str(guild.id)})
+            if (num_docs > 0):
+                channelArk = arkServer.find_one({'serverId': str(guild.id)})["channelName"]
+            for channel in guild.text_channels:
+                if removeCaractere(channel.name).upper() == removeCaractere(str(channelArk)).upper():
+                    await channel.send(msg)
+
+@tasks.loop(seconds=6)
+async def check_servidor_ark():
+    servers = arkServer.find()
+    data = await get_server_ark()
+    for server in servers:
+        serversArk = server["serversArk"]
+        for ark in serversArk:
+            ipBase = ark["ip"]
+            statusBase = ark["status"]
+            everyone = ark["everyone"]
+            for info in data:
+                ip = info["attributes"]["ip"]
+                port = info["attributes"]["port"]
+                status = info["attributes"]["status"]
+                name = info["attributes"]["name"]
+                addresss = ip + ":" + str(port)
+                if ipBase == addresss and str(status) != str(statusBase):
+                    arkServer.update_one(
+                        {"serverId": str(server["serverId"]),
+                         "serversArk": {"$elemMatch": {"ip": ipBase}}},{"$set": {"serversArk.$.status": status, "serversArk.$.name": name}})
+                    upMessage = ""
+                    downMessage = ""
+                    if everyone:
+                        upMessage = f'@everyone\n'
+                        downMessage = f'@everyone\n'
+                    upMessage = upMessage + f"Servidor de nome: {name} está online!\n"
+                    downMessage = downMessage + f"Servidor de nome: {name} está offline!\n"
+                    upMessage = upMessage + ark["upMessage"]
+                    downMessage = downMessage + ark["downMessage"]
+                    if status == "online":
+                        print(upMessage)
+                        await enviarMensagemNotificationServer(upMessage, server["serverId"])
+                    else:
+                        print(downMessage)
+                        await enviarMensagemNotificationServer(downMessage, server["serverId"])
+
+
+async def get_server_ark():
+    try:
+        url = 'https://api.battlemetrics.com/servers'
+        params = {'filter[game]': 'ark', "page[size]": 100 , 'fields[server]': 'name,ip,port,status'}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, params=params) as response:
+                data = await response.json()
+                return data['data']
+    except Exception as e:
+        print(f"Ocorreu um erro na request da Twitch: {e}")
+    return None
+
+# ----------------------------------------------------------------------------
 
 @tasks.loop(minutes=59.0)
 async def check_reminders():
@@ -473,6 +561,7 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
             for channel in guild.text_channels:
                 if removeCaractere(channel.name).upper() == removeCaractere(str(channelTwitch)).upper():
                     await channel.send(msg)
+
 
 # < --------------------------------- SALA COMPARTILHADA ----------------------------------->
 
