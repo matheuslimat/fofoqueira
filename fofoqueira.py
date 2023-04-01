@@ -40,7 +40,9 @@ shared_channel_name = "sala_compartilhada"
 client.remove_command("help")
 
 def is_running_on_heroku():
-    return 'DYNO' in os.environ
+    result = 'DYNO' in os.environ
+    print(f"Running on Heroku: {result}")
+    return result
 
 @client.command()
 async def change_twitch_notification(ctx, channel):
@@ -404,7 +406,6 @@ async def exibir_imagem(message):
         await message.channel.send(url_imagem)
     else:
         await message.channel.send(f"O jogo {nome_jogo} não foi encontrado")
-
 
 @tasks.loop(seconds=5)
 async def check_stream():
