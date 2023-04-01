@@ -11,6 +11,7 @@ from unidecode import unidecode
 import pymongo
 import time
 import aiohttp
+import asyncio
 import os
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
@@ -24,7 +25,7 @@ db = clientMongoDB['fofoqueira']
 
 twitchChannel = db['twitch_channel']
 bazar = db['bazar']
-arkServer = db['ark']
+
 
 flood_limit = 5
 voice_join_times = {}
@@ -46,25 +47,12 @@ async def change_twitch_notification(ctx, channel):
     if ctx.author.id != ctx.guild.owner_id:
         await ctx.send("Você não tem permissão para usar esse comando.")
         return
-
+    
     server_id = ctx.guild.id
 
     twitchChannel.update_one({'servidorId': str(server_id)}, {"$set": {'nomeCanal': channel, 'servidorId': str(server_id)}}, upsert=True)
 
     await ctx.send(f"Novo canal de notificação twitch, salvo!")
-
-
-@client.command()
-async def change_server_ark_notification(ctx, channel):
-    if ctx.author.id != ctx.guild.owner_id:
-        await ctx.send("Você não tem permissão para usar esse comando.")
-        return
-
-    server_id = ctx.guild.id
-
-    twitchChannel.update_one({'servidorId': str(server_id)}, {"$set": {'channelName': channel, 'serverId': str(server_id)}}, upsert=True)
-
-    await ctx.send(f"Novo canal de notificação de servidores Ark, salvo!")
 
 
 
@@ -114,37 +102,18 @@ async def add_channel_twitch(ctx, valor: str):
     if ctx.author.id != ctx.guild.owner_id:
         await ctx.send("Você não tem permissão para usar esse comando.")
         return
-
+    
     server_id = ctx.guild.id
 
     twitchChannel.update_one({"servidorId": str(server_id)}, {"$addToSet": {"canais": {
       "login": valor,  # Corrigido aqui
-      "status": "",
+      "status": False,
       "mensagemEntrada": f"O(a) {valor} está online. Assista em https://www.twitch.tv/{valor}",
       "mensagemSaida": f"O(a) {valor} está offline.",
       "paraTodos": False
     }}})
 
     await ctx.send(f"Novo streamer, salvo para notificação de lives!")
-
-@client.command()
-async def add_channel_server_ark(ctx, valor: str):
-    # if ctx.author.id != ctx.guild.owner_id:
-    #     await ctx.send("Você não tem permissão para usar esse comando.")
-    #     return
-
-    server_id = ctx.guild.id
-
-    arkServer.update_one({"serverId": str(server_id)}, {"$addToSet": {"serversArk": {
-      "ip": valor,
-      "status": False,
-      "upMessage": "O servidor está online",
-      "downMessage": "O servidor está offline",
-      "name": "",
-      "everyone": False
-    }}})
-
-    await ctx.send(f"Novo servidor de ark, adicionado para notificação de online/offline!")
 
 
 
@@ -218,74 +187,72 @@ async def show_commands(message):
     await message.channel.send(f'Comandos disponíveis: {", ".join(command_list)}')
 
 
-@tasks.loop(minutes=300.0)
-async def enviar_mensagem_bazar():
-    running_on_heroku = is_running_on_heroku()
+# @tasks.loop(minutes=300.0)
+# async def enviar_mensagem_bazar():
+#     running_on_heroku = is_running_on_heroku()
 
-    vendas_cursor = bazar.find()
+#     vendas_cursor = bazar.find()
 
-    lista_de_vendas = []
-    for venda in vendas_cursor:
-        lista_de_vendas.extend(venda["listaDeVendas"])
+#     lista_de_vendas = []
+#     for venda in vendas_cursor:
+#         lista_de_vendas.extend(venda["listaDeVendas"])
 
-    target_servers = []
-    if not running_on_heroku:
-        target_servers.append("767037529966641173")
-    else:
-        target_servers = [guild.id for guild in client.guilds]
+#     target_servers = []
+#     if not running_on_heroku:
+#         target_servers.append("767037529966641173")
+#     else:
+#         target_servers = [guild.id for guild in client.guilds]
 
-    for server_id in target_servers:
-        if not lista_de_vendas:
-            response = random.choice(
-                [
-                    "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
-                    "**Não tem nada a venda? Como pode...**",
-                    "**Eu só queria comprar uma merdinha...**",
-                    "**Anuncia ae, esse bazar ta com teia de aranha já!**",
-                    "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
-                    "**Anuncia bb que eu to carente já**",
-                    "**Anuncie aqui, bota tudo, lá ele!!!**",
-                    "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
-                ]
-            )
-            await channel.send(response)
-        else:
-            for venda in lista_de_vendas:
-                channel = discord.utils.get(
-                    client.get_all_channels(), name="bazar-do-leigo"
-                )  # Substitua 'channel-name' pelo nome do canal
-
-                embed = discord.Embed(
-                    title="Items a Venda",
-                    url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
-                    description=random.choice(
-                        [
-                            "Você não vai querer perder essa oportunidade! ",
-                            "Corre lá! Mas lembre-se que você não é parça do Neymar...",
-                            "Não deixe essa oportunidade passar! ",
-                            "Não fique de fora! Aproveite pra dar o golpe! ",
-                            "Não perca essa chance! Vai ser como roubar doce de criança. ",
-                            "Não perca essa oportunidade única de fazer merda! ",
-                            "The Bazar da fofoqueira venda e compre já never ends.",
-                        ]
-                    ),
-                    color=0xFF0000,
-                )
-                embed.set_author(
-                    name="Leigo: " + venda["author"],
-                    icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
-                )
-                embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
-                embed.add_field(name="Produto:", value=venda["produto"], inline=True)
-                embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
-                await channel.send(embed=embed)
+#     for server_id in target_servers:
+#         if not lista_de_vendas:
+#             response = random.choice(
+#                 [
+#                     "**Vocês tão sendo leigos! Coloca um negócio a venda ae!!!**",
+#                     "**Não tem nada a venda? Como pode...**",
+#                     "**Eu só queria comprar uma merdinha...**",
+#                     "**Anuncia ae, esse bazar ta com teia de aranha já!**",
+#                     "**Nenhum corno ou corna anunciou ainda!!! Irei fechar essa merda.**",
+#                     "**Anuncia bb que eu to carente já**",
+#                     "**Anuncie aqui, bota tudo, lá ele!!!**",
+#                     "**Extra extra extra, zero pessoas enganadas, vão anunciar não?**",
+#                 ]
+#             )
+#             await channel.send(response)
+#         else:
+#             for venda in lista_de_vendas:
+#                 channel = discord.utils.get(
+#                     client.get_all_channels(), name="bazar-do-leigo"
+#                 )
+#                 embed = discord.Embed(
+#                     title="Items a Venda",
+#                     url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg",
+#                     description=random.choice(
+#                         [
+#                             "Você não vai querer perder essa oportunidade! ",
+#                             "Corre lá! Mas lembre-se que você não é parça do Neymar...",
+#                             "Não deixe essa oportunidade passar! ",
+#                             "Não fique de fora! Aproveite pra dar o golpe! ",
+#                             "Não perca essa chance! Vai ser como roubar doce de criança. ",
+#                             "Não perca essa oportunidade única de fazer merda! ",
+#                             "The Bazar da fofoqueira venda e compre já never ends.",
+#                         ]
+#                     ),
+#                     color=0xFF0000,
+#                 )
+#                 embed.set_author(
+#                     name="Leigo: " + venda["author"],
+#                     icon_url="https://d1fdloi71mui9q.cloudfront.net/2fJzNj9WQI6A26GTyqFa_w1c5QzIiE78smV4h",
+#                 )
+#                 embed.set_thumbnail(url="https://i.ytimg.com/vi/WAjjmrVwDrI/maxresdefault.jpg")
+#                 embed.add_field(name="Produto:", value=venda["produto"], inline=True)
+#                 embed.add_field(name="Preço:", value="R$ " + str(venda["valor"]), inline=True)
+#                 await channel.send(embed=embed)
 
 
 @client.event
 async def on_ready():
     enviar_mensagem_bazar.start()
     check_stream.start()
-    check_servidor_ark.start()
 
 # <---------------------------------- TTS ------------------------------------------------------>
 @client.event
@@ -310,7 +277,7 @@ async def on_voice_state_update(member, before, after):
             f"{member.mention} saiu do canal {remover_emojis(before.channel.name)}",
             tts=True,
         )
-
+        
 # <---------------------------- PRECO DOS JOGOS STEAM ----------------------------------------->
 
 @client.command()
@@ -465,7 +432,7 @@ async def check_stream():
                                 mensagemSaida = f'@everyone\n'
                             mensagemEntrada = mensagemEntrada + streamer["mensagemEntrada"]
                             mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
-                            if streamer_current_status == True:
+                            if (streamer_current_status == True):
                                 await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
                             else:
                                 await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
@@ -483,56 +450,7 @@ async def get_stream_data(session, user):
                     return item
     except aiohttp.ClientError as e:
         print(f"Ocorreu um erro na request da Twitch: {e}")
-
-    return None
-
-@tasks.loop(seconds=6)
-async def check_servidor_ark():
-    servers = arkServer.find()
-    data = await get_server_ark()
-    for server in servers:
-        serversArk = server["serversArk"]
-        for ark in serversArk:
-            ipBase = ark["ip"]
-            statusBase = ark["status"]
-            everyone = ark["everyone"]
-            for info in data:
-                ip = info["attributes"]["ip"]
-                port = info["attributes"]["port"]
-                status = info["attributes"]["status"]
-                name = info["attributes"]["name"]
-                addresss = ip + ":" + str(port)
-                if ipBase == addresss and str(status) != str(statusBase):
-                    arkServer.update_one(
-                        {"serverId": str(server["serverId"]),
-                         "serversArk": {"$elemMatch": {"ip": ipBase}}},{"$set": {"serversArk.$.status": status, "serversArk.$.name": name}})
-                    upMessage = ""
-                    downMessage = ""
-                    if everyone:
-                        upMessage = f'@everyone\n'
-                        downMessage = f'@everyone\n'
-                    upMessage = upMessage + f"Servidor de nome: {name} está online!\n"
-                    downMessage = downMessage + f"Servidor de nome: {name} está offline!\n"
-                    upMessage = upMessage + ark["upMessage"]
-                    downMessage = downMessage + ark["downMessage"]
-                    if status == "online":
-                        print(upMessage)
-                        await enviarMensagemNotificationServer(upMessage, server["serverId"])
-                    else:
-                        print(downMessage)
-                        await enviarMensagemNotificationServer(downMessage, server["serverId"])
-
-
-async def get_server_ark():
-    try:
-        url = 'https://api.battlemetrics.com/servers'
-        params = {'filter[game]': 'ark', "page[size]": 100 , 'fields[server]': 'name,ip,port,status'}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-                return data['data']
-    except Exception as e:
-        print(f"Ocorreu um erro na request da Twitch: {e}")
+    
     return None
 
 def removeCaractere(palavra):
@@ -543,17 +461,6 @@ def removeCaractere(palavra):
     texto_sem_acento = texto_sem_acento.replace("ç", "c").replace("Ç", "c")
     return texto_sem_acento
 
-async def enviarMensagemNotificationServer(msg, servidorId):
-    for guild in client.guilds:
-        if str(guild.id) == str(servidorId):
-            channelArk = "servidores"
-            num_docs = arkServer.count_documents({'serverId': str(guild.id)})
-            if (num_docs > 0):
-                channelArk = arkServer.find_one({'serverId': str(guild.id)})["channelName"]
-            for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == removeCaractere(str(channelArk)).upper():
-                    await channel.send(msg)
-
 async def enviarMensagemNotificationTwitch(msg, servidorId):
     for guild in client.guilds:
         if str(guild.id) == str(servidorId):
@@ -561,6 +468,7 @@ async def enviarMensagemNotificationTwitch(msg, servidorId):
             num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
             if (num_docs > 0):
                 channelTwitch = twitchChannel.find_one({'servidorId': str(guild.id)})["nomeCanal"]
+            print(channelTwitch)
             for channel in guild.text_channels:
                 if removeCaractere(channel.name).upper() == removeCaractere(str(channelTwitch)).upper():
                     await channel.send(msg)
@@ -593,7 +501,7 @@ async def on_message(message):
 
     if message.author.bot:
         return
-
+    
     if message.author == client.user:
         await client.process_commands(message)
         return
