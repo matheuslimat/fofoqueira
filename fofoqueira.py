@@ -523,7 +523,7 @@ async def check_stream():
                             mensagemEntrada = mensagemEntrada + streamer["mensagemEntrada"]
                             mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
                             if (streamer_current_status == True):
-                                mensagemEntrada = mensagemEntrada + "\n Jogo: " + get_game_name(streamer_name)
+                                mensagemEntrada = mensagemEntrada + "\n Jogo: " + get_game_name(session, streamer_name)
                                 await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
                             else:
                                 await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
@@ -544,21 +544,12 @@ async def get_stream_data(session, user):
     
     return None
 
-async def get_game_name(channel_name):
-    url = "https://api.twitch.tv/helix/streams"
-    headers = {
-        "Client-ID": client_id_twitch,
-        "Authorization": token_twitch
-    }
-    params = {
-        "user_login": channel_name
-    }
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers, params=params) as response:
+async def get_game_name(session, channel_name):
+    url = f"https://api.twitch.tv/helix/streams?user_login={channel_name}"
+    async with session.get(url) as response:
             data = await response.json()
     if data["data"]:
         return data["data"][0]["game_name"]
-    
     return None
 
 def removeCaractere(palavra):
