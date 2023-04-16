@@ -503,7 +503,6 @@ async def check_stream():
         for server in servers:
             if not is_running_on_heroku() and server["servidorId"] != "767037529966641173":
                 continue
-
             streamers_for_channel = server["canais"]
             if streamers_for_channel is not None:
                 for streamer in streamers_for_channel:
@@ -512,7 +511,8 @@ async def check_stream():
                     streamer_data = await get_stream_data(session, streamer_name)
                     if streamer_data is not None:
                         streamer_current_status = streamer_data["is_live"]
-                        if streamer_status != streamer_current_status:
+                        print("banco: " + str(streamer_status) + " current: " + str(streamer_current_status))
+                        if str(streamer_status) != str(streamer_current_status):
                             twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
                             mensagemEntrada = ""
                             mensagemSaida = ""
@@ -524,6 +524,7 @@ async def check_stream():
                             mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
                             if (streamer_current_status == True):
                                 mensagemEntrada = mensagemEntrada + "\n Jogo: " + get_game_name(session, streamer_name)
+                                print(mensagemEntrada)
                                 await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
                             else:
                                 await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
