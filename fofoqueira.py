@@ -524,7 +524,7 @@ async def check_stream():
                             mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
                             if (streamer_current_status == True):
                                 gameName = await get_game_name(session, streamer_name)
-                                mensagemEntrada = mensagemEntrada + "\n Jogo: " + gameName
+                                mensagemEntrada = mensagemEntrada + "\nJogo: " + gameName
                                 print(mensagemEntrada)
                                 await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
                             else:
