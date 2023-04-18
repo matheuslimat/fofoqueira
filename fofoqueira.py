@@ -501,8 +501,8 @@ async def check_stream():
     async with aiohttp.ClientSession(headers={"Client-ID": client_id_twitch, "Authorization": f"Bearer {token_twitch}"}) as session:
         servers = twitchChannel.find()
         for server in servers:
-            if not is_running_on_heroku() and server["servidorId"] != "767037529966641173":
-                continue
+            # if not is_running_on_heroku() and server["servidorId"] != "767037529966641173":
+            #     continue
             streamers_for_channel = server["canais"]
             if streamers_for_channel is not None:
                 for streamer in streamers_for_channel:
