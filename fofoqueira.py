@@ -13,6 +13,12 @@ import time
 import aiohttp
 import asyncio
 import os
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+
+CACHE_TIMEOUT = 60  # Tempo limite do cache em segundos
+stream_data_cache = {} 
 
 client = commands.Bot(command_prefix="f!", intents=discord.Intents.all())
 
@@ -119,7 +125,7 @@ async def add_channel_twitch(ctx, valor: str):
     twitchChannel.update_one({"servidorId": str(server_id)}, {"$addToSet": {"canais": {
       "login": valor,  # Corrigido aqui
       "status": False,
-      "mensagemEntrada": f"O(a) {valor} está online. Assista em https://www.twitch.tv/{valor}",
+      "incomingMessage": f"O(a) {valor} está online. Assista em https://www.twitch.tv/{valor}",
       "mensagemSaida": f"O(a) {valor} está offline.",
       "paraTodos": False
     }}})
@@ -356,7 +362,7 @@ async def add_channel_server_ark(ctx, valor: str):
 
     await ctx.send(f"Novo servidor de ark, adicionado para notificação de online/offline!")
 
-async def enviarMensagemNotificationServer(msg, servidorId):
+async def sendMessageNotificationServer(msg, servidorId):
     for guild in client.guilds:
         if str(guild.id) == str(servidorId):
             channelArk = "servidores"
@@ -364,7 +370,7 @@ async def enviarMensagemNotificationServer(msg, servidorId):
             if (num_docs > 0):
                 channelArk = arkServer.find_one({'serverId': str(guild.id)})["channelName"]
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == removeCaractere(str(channelArk)).upper():
+                if handleString(channel.name).upper() == handleString(str(channelArk)).upper():
                     await channel.send(msg)
 
 @tasks.loop(seconds=6)
@@ -398,10 +404,10 @@ async def check_servidor_ark():
                     downMessage = downMessage + ark["downMessage"]
                     if status == "online":
                         print(upMessage)
-                        await enviarMensagemNotificationServer(upMessage, server["serverId"])
+                        await sendMessageNotificationServer(upMessage, server["serverId"])
                     else:
                         print(downMessage)
-                        await enviarMensagemNotificationServer(downMessage, server["serverId"])
+                        await sendMessageNotificationServer(downMessage, server["serverId"])
 
 
 async def get_server_ark():
@@ -496,54 +502,76 @@ async def exibir_imagem(message):
     else:
         await message.channel.send(f"O jogo {nome_jogo} não foi encontrado")
 
-@tasks.loop(seconds=5)
+@tasks.loop(seconds=10)
 async def check_stream():
     async with aiohttp.ClientSession(headers={"Client-ID": client_id_twitch, "Authorization": f"Bearer {token_twitch}"}) as session:
-        servers = twitchChannel.find()
+        try:
+            servers = twitchChannel.find()
+        except Exception as e:
+            logging.exception("Error fetching servers from the database")
+            return
         for server in servers:
             # if not is_running_on_heroku() and server["servidorId"] != "767037529966641173":
             #     continue
-            streamers_for_channel = server["canais"]
+            try:
+                streamers_for_channel = server["canais"]
+            except KeyError:
+                logging.warning(f"Server {server} does not have the key 'canais'")
+                continue
             if streamers_for_channel is not None:
                 for streamer in streamers_for_channel:
                     streamer_name = streamer["login"]
                     streamer_status = streamer["status"]
-                    streamer_data = await get_stream_data(session, streamer_name)
+                    try:
+                        streamer_data = await get_stream_data(session, streamer_name)
+                    except Exception as e:
+                        logging.exception(f"Error getting stream data for {streamer_name}")
+                        continue
                     if streamer_data is not None:
                         streamer_current_status = streamer_data["is_live"]
-                        print("banco: " + str(streamer_status) + " current: " + str(streamer_current_status))
                         if str(streamer_status) != str(streamer_current_status):
                             twitchChannel.update_one({"servidorId": server["servidorId"], "canais": {"$elemMatch": {"login": streamer_name}}}, {"$set": {"canais.$.status": streamer_current_status}})
-                            mensagemEntrada = ""
+                            incomingMessage = ""
                             mensagemSaida = ""
                             streamer_msg_for_all = streamer["paraTodos"]
-                            if streamer_msg_for_all == True:
-                                mensagemEntrada = f'@everyone\n'
+                            if streamer_msg_for_all:
+                                incomingMessage = f'@everyone\n'
                                 mensagemSaida = f'@everyone\n'
-                            mensagemEntrada = mensagemEntrada + streamer["mensagemEntrada"]
+                            incomingMessage = incomingMessage + streamer["incomingMessage"]
                             mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
-                            if (streamer_current_status == True):
+                            if streamer_current_status:
                                 gameName = await get_game_name(session, streamer_name)
-                                mensagemEntrada = mensagemEntrada + "\nJogo: " + gameName
-                                print(mensagemEntrada)
-                                await enviarMensagemNotificationTwitch(mensagemEntrada, server["servidorId"])
+                                incomingMessage = incomingMessage + "\nJogo: " + gameName
+                                print(incomingMessage)
+                                try:
+                                    await sendMessageNotificationTwitch(incomingMessage, server["servidorId"])
+                                except Exception as e:
+                                    logging.exception(f"Error sending message for server {server['servidorId']}")
+                                    continue
                             else:
-                                await enviarMensagemNotificationTwitch(mensagemSaida, server["servidorId"])
+                                await sendMessageNotificationTwitch(mensagemSaida, server["servidorId"])
 
 
 async def get_stream_data(session, user):
-    url = f"https://api.twitch.tv/helix/search/channels?query={user}"
+    current_time = time.time()
 
+    # Verifica se os dados do streamer estão no cache e se ainda são válidos
+    if user in stream_data_cache and current_time - stream_data_cache[user]['timestamp'] < CACHE_TIMEOUT:
+        return stream_data_cache[user]['data']
+
+    url = f"https://api.twitch.tv/helix/search/channels?query={user}"
     try:
         async with session.get(url) as response:
             response.raise_for_status()
             data = await response.json()
             for item in data["data"]:
                 if item["broadcaster_login"] == user:
+                    # Armazena os dados do streamer no cache e registra o horário atual
+                    stream_data_cache[user] = {'data': item, 'timestamp': current_time}
                     return item
     except aiohttp.ClientError as e:
-        print(f"Ocorreu um erro na request da Twitch: {e}")
-    
+        logging.exception(f"Error in Twitch request: {e}")
+
     return None
 
 async def get_game_name(session, channel_name):
@@ -554,7 +582,7 @@ async def get_game_name(session, channel_name):
         return data["data"][0]["game_name"]
     return None
 
-def removeCaractere(palavra):
+def handleString(palavra):
     texto_sem_traco = re.sub(r'[-_]', '', palavra)
     texto_sem_emojis = remover_emojis(texto_sem_traco)
     texto_sem_especiais = re.sub(r'[^\w\s]', '', texto_sem_emojis)
@@ -562,17 +590,31 @@ def removeCaractere(palavra):
     texto_sem_acento = texto_sem_acento.replace("ç", "c").replace("Ç", "c")
     return texto_sem_acento
 
-async def enviarMensagemNotificationTwitch(msg, servidorId):
+async def sendMessageNotificationTwitch(msg, servidorId):
     for guild in client.guilds:
         if str(guild.id) == str(servidorId):
             channelTwitch = "LIVES"
-            num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
+            try:
+                num_docs = twitchChannel.count_documents({'servidorId': str(guild.id)})
+            except Exception as e:
+                logging.exception(f"Error counting documents for server {guild.id}")
+                return
             if (num_docs > 0):
-                channelTwitch = twitchChannel.find_one({'servidorId': str(guild.id)})["nomeCanal"]
+                try:
+                    channelTwitch = twitchChannel.find_one({'servidorId': str(guild.id)})["nomeCanal"]
+                except KeyError:
+                    logging.warning(f"Server {guild.id} does not have the key 'nomeCanal'")
+                except Exception as e:
+                    logging.exception(f"Error finding server {guild.id} in the database")
+                    return
             print(channelTwitch)
             for channel in guild.text_channels:
-                if removeCaractere(channel.name).upper() == removeCaractere(str(channelTwitch)).upper():
-                    await channel.send(msg)
+                if handleString(channel.name).upper() == handleString(str(channelTwitch)).upper():
+                    try:
+                        await channel.send(msg)
+                    except Exception as e:
+                        logging.exception(f"Error sending message to channel {channel.name}")
+                        return
 
 
 # < --------------------------------- SALA COMPARTILHADA ----------------------------------->
