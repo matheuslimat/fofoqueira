@@ -537,7 +537,7 @@ async def check_stream():
                             if streamer_msg_for_all:
                                 incomingMessage = f'@everyone\n'
                                 mensagemSaida = f'@everyone\n'
-                            incomingMessage = incomingMessage + streamer["incomingMessage"]
+                            incomingMessage = incomingMessage + streamer["mensagemEntrada"]
                             mensagemSaida = mensagemSaida + streamer["mensagemSaida"]
                             if streamer_current_status:
                                 gameName = await get_game_name(session, streamer_name)
